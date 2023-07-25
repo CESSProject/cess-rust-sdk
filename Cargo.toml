@@ -1,0 +1,21 @@
+[package]
+name = "cess-rust-sdk"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.72"
+blake2 = "0.10.6"
+bs58 = "0.5.0"
+fs4 = "0.6.6"
+hex = "0.4.3"
+lazy_static = "1.4.0"
+libp2p = {version = "0.52.1", features=["dns"]}
+md5 = "0.7.0"
+sha2 = "0.10.7"
+sys-info = "0.9.1"
+tokio = {version = "1.29.1", features=["full"]}
+trust-dns-resolver = "0.22.0"
+uuid = { version = "1.4.1", features = ["v4", "fast-rng", "macro-diagnostics"]}

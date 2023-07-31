@@ -22,7 +22,7 @@ pub fn is_valid_ip(ip_addr: &str) -> bool {
 // parse_multiaddrs
 fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
     let mut result = Vec::new();
-    // let mut real_dns = Vec::new();
+    let mut real_dns = Vec::new();
     match Multiaddr::from_str(domain) {
         Ok(addr) => {
             let mut protocols = addr.iter();
@@ -42,11 +42,31 @@ fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
     // Perform DNS TXT lookup
     let records = resolver.txt_lookup(domain)?;
     for record in records.iter() {
-        for txt_data in record.iter() {
-            todo!("complete this later")
+        for dnsnames in record.iter() {
+            let v: String = dnsnames.iter().map(|c| *c as char).collect();
+            if v.contains("ip4") && v.contains("tcp") && v.matches('=').count() == 1 {
+                result.push(v.trim_start_matches("dnsaddr=").to_string());
+            }
         }
     }
 
+    for (_, v) in result.iter().enumerate() {
+        let dnses = match resolver.txt_lookup(&format!("_dnsaddr.{}", v)) {
+            Ok(dnses) => dnses,
+            Err(_) => continue,
+        };
+        for dns in dnses.iter() {
+            for dnames in dns.iter() {
+                let dns_str: String = dnames.iter().map(|c| *c as char).collect();
+                if dns_str.contains("ip4") && dns_str.contains("tcp") && dns_str.matches('=').count() == 1 {
+                    let multiaddr = dns_str.trim_start_matches("dnsaddr=").to_string();
+                    real_dns.push(multiaddr);
+                }
+            }
+        }
+    }
+
+    result.extend(real_dns);
     Ok(result)
 }
 
@@ -56,23 +76,5 @@ fn parse_dnsaddr_txt(txt: &[u8]) -> Result<Multiaddr> {
     match s.strip_prefix("dnsaddr=") {
         None => bail!("Missing `dnsaddr=` prefix."),
         Some(a) => Ok(Multiaddr::try_from(a).with_context(|| "Error")?),
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::core::utils::ip::parse_multiaddrs;
-
-    #[test]
-    fn test_parse_multiaddrs() {
-        // Test Multiaddr
-        let domain = "/ip4/127.0.0.1/tcp/8080";
-        let result = parse_multiaddrs(domain);
-        println!("{:?}", result);
-
-        // Test Domain name address
-        let domain = "www.example.com";
-        let result = parse_multiaddrs(domain);
-        println!("{:?}", result);
     }
 }

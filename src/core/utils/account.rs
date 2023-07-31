@@ -7,9 +7,9 @@ const CESS_PREFIX: [u8; 2] = [0x50, 0xac];
 
 pub fn parsing_public_key(address: &str) -> Result<Vec<u8>> {
     match verify_address(address, &CESS_PREFIX) {
-        Err(err) => {
+        Err(_) => {
             if let Err(_) = verify_address(address, &SUBSTRATE_PREFIX) {
-                bail!("invalid Account");
+                bail!("Invalid Account");
             }
             let data = bs58::decode(address)
                 .into_vec()

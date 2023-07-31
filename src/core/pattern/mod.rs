@@ -421,6 +421,8 @@ impl Display for Error {
     }
 }
 
+pub const MIN_BUCKET_NAME_LENGTH: usize = 3;
+pub const MAX_BUCKET_NAME_LENGHT: usize = 63;
 
 #[cfg(test)]
 mod test {

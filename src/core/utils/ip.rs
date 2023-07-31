@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
 
 use libp2p::core::multiaddr::{Multiaddr, Protocol};
 
@@ -43,12 +43,20 @@ fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
     let records = resolver.txt_lookup(domain)?;
     for record in records.iter() {
         for txt_data in record.iter() {
-            let value: String = txt_data.iter().map(|c| *c as char ).collect();
-            println!("{}", value);
+            todo!("complete this later")
         }
     }
 
     Ok(result)
+}
+
+/// Parses a `<character-string>` of a `dnsaddr` TXT record.
+fn parse_dnsaddr_txt(txt: &[u8]) -> Result<Multiaddr> {
+    let s = std::str::from_utf8(txt).with_context(|| "Error")?;
+    match s.strip_prefix("dnsaddr=") {
+        None => bail!("Missing `dnsaddr=` prefix."),
+        Some(a) => Ok(Multiaddr::try_from(a).with_context(|| "Error")?),
+    }
 }
 
 #[cfg(test)]

@@ -138,13 +138,16 @@ name = "cess-rust-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "backtrace",
  "blake2",
  "bs58",
  "fs4",
  "hex",
  "lazy_static",
  "libp2p",
+ "libp2p-core",
  "md5",
+ "rand 0.8.5",
  "sha2 0.10.7",
  "sys-info",
  "tokio",

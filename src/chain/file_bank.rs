@@ -10,7 +10,7 @@ use polkadot::{
     file_bank::events::{CreateBucket, DeleteBucket},
     runtime_types::{
         cp_cess_common::Hash as CPHash,
-        pallet_file_bank::types::{BucketInfo, FileInfo, FillerInfo},
+        pallet_file_bank::types::{BucketInfo, DealInfo, FileInfo, FillerInfo},
         sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
@@ -103,7 +103,7 @@ impl Sdk {
     // query_filler_map
     pub async fn query_filler_map(&self, pk: &[u8], file_hash: &str) -> Result<FillerInfo> {
         // TODO: get the account from self and remove the pk parameter.
-        
+
         let api = init_api().await?;
 
         let account =
@@ -127,14 +127,44 @@ impl Sdk {
     }
 
     // query_storage_order
-    pub async fn query_storage_order(&self, root_hash: &str) -> Result<()> {
-        // Return type need to be StorageOrder
-        Ok(())
+    pub async fn query_storage_order(&self, root_hash: &str) -> Result<DealInfo> {
+        let api = init_api().await?;
+
+        let hash_bytes = hex_string_to_bytes(root_hash);
+        let hash = CPHash(hash_bytes);
+        let storage_query = polkadot::storage().file_bank().deal_map(hash);
+
+        let result = api
+            .storage()
+            .at_latest()
+            .await?
+            .fetch(&storage_query)
+            .await?;
+        let value = result.unwrap();
+
+        Ok(value)
     }
 
     // query_pending_replacements
     pub async fn query_pending_replacements(&self, pk: &[u8]) -> Result<u32> {
-        Ok(1)
+        let api = init_api().await?;
+
+        let account =
+            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+
+        let storage_query = polkadot::storage()
+            .file_bank()
+            .pending_replacements(&account.to_account_id().into());
+
+        let result = api
+            .storage()
+            .at_latest()
+            .await?
+            .fetch(&storage_query)
+            .await?;
+        let value = result.unwrap();
+
+        Ok(value)
     }
 
     // // submit_idle_metadata

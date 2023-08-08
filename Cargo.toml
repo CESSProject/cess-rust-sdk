@@ -15,10 +15,15 @@ hex = "0.4.3"
 lazy_static = "1.4.0"
 libp2p = { version = "0.52.1", features = ["dns"] }
 libp2p-core = "0.40.0"
+log = "0.4.19"
 md5 = "0.7.0"
+parity-scale-codec = "3.6.4"
+phf = "0.11.2"
 rand = "0.8.5"
 regex = "1.9.1"
 sha2 = "0.10.7"
+sp-keyring = "24.0.0"
+subxt = { git = "https://github.com/paritytech/subxt", tag="v0.29.0"}
 sys-info = "0.9.1"
 tokio = { version = "1.29.1", features = ["full"] }
 trust-dns-resolver = "0.22.0"

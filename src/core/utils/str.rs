@@ -32,7 +32,7 @@ pub fn get_random_code(length: u8) -> Result<String> {
     Ok(bytes.into_iter().collect())
 }
 
-fn rand_str(n: usize) -> String {
+pub fn rand_str(n: usize) -> String {
     let seed = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()

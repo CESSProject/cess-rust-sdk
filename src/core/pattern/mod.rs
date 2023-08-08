@@ -62,7 +62,7 @@ pub enum ChainState {
     // FILE_BANK
     File,
     Bucket,
-    BucketLit,
+    BucketList,
     DealMap,
     FillerMap,
     PendingReplace,
@@ -96,7 +96,7 @@ impl Display for ChainState {
             ChainState::TeeProd2Pk => write!(f, "{}", "TeePodr2Pk"),
             ChainState::File => write!(f, "{}", "File"),
             ChainState::Bucket => write!(f, "{}", "Bucket"),
-            ChainState::BucketLit => write!(f, "{}", "UserBucketList"),
+            ChainState::BucketList => write!(f, "{}", "UserBucketList"),
             ChainState::DealMap => write!(f, "{}", "DealMap"),
             ChainState::FillerMap => write!(f, "{}", "FillerMap"),
             ChainState::PendingReplace => write!(f, "{}", "PendingReplacements"),
@@ -433,6 +433,15 @@ pub const FRAEMENT_SIZE: u32 = 8 * SIZE_1_MI_B;
 pub const BLOCK_NUMBER: u32 = 1024;
 pub const DATA_SHARDS: u32 = 2;
 pub const PAR_SHARDS: u32 = 1;
+
+pub struct ChallengeSnapshot {
+    pub net_snapshot: NetSnapshot,
+    pub miner_snapshot: Vec<MinerSnapshot>,
+}
+
+pub struct NetSnapshot {}
+
+pub struct MinerSnapshot {}
 
 #[cfg(test)]
 mod test {

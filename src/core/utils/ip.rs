@@ -20,7 +20,7 @@ pub fn is_valid_ip(ip_addr: &str) -> bool {
 }
 
 // parse_multiaddrs
-fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
+pub fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
     let mut result = Vec::new();
     let mut real_dns = Vec::new();
     match Multiaddr::from_str(domain) {
@@ -58,7 +58,10 @@ fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
         for dns in dnses.iter() {
             for dnames in dns.iter() {
                 let dns_str: String = dnames.iter().map(|c| *c as char).collect();
-                if dns_str.contains("ip4") && dns_str.contains("tcp") && dns_str.matches('=').count() == 1 {
+                if dns_str.contains("ip4")
+                    && dns_str.contains("tcp")
+                    && dns_str.matches('=').count() == 1
+                {
                     let multiaddr = dns_str.trim_start_matches("dnsaddr=").to_string();
                     real_dns.push(multiaddr);
                 }
@@ -71,7 +74,7 @@ fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
 }
 
 /// Parses a `<character-string>` of a `dnsaddr` TXT record.
-fn parse_dnsaddr_txt(txt: &[u8]) -> Result<Multiaddr> {
+pub fn parse_dnsaddr_txt(txt: &[u8]) -> Result<Multiaddr> {
     let s = std::str::from_utf8(txt).with_context(|| "Error")?;
     match s.strip_prefix("dnsaddr=") {
         None => bail!("Missing `dnsaddr=` prefix."),

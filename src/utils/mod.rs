@@ -1,5 +1,8 @@
-use anyhow::{Result, bail};
-use subxt::{storage::{StorageAddress, address::Yes}, Error};
+use anyhow::{bail, Result};
+use subxt::{
+    storage::{address::Yes, StorageAddress},
+    Error,
+};
 
 use crate::init_api;
 
@@ -21,37 +24,31 @@ pub fn hex_string_to_bytes(hex: &str) -> [u8; 64] {
     result
 }
 
-pub(crate) async fn query_storage<'address, Address>(query: &'address Address) 
--> Result<<Address as StorageAddress>::Target>
-where Address: StorageAddress<IsFetchable = Yes> + 'address, 
+pub(crate) async fn query_storage<'address, Address>(
+    query: &'address Address,
+) -> Result<<Address as StorageAddress>::Target>
+where
+    Address: StorageAddress<IsFetchable = Yes> + 'address,
 {
     let api = match init_api().await {
         Ok(api) => api,
-        Err(e) => bail!("Failed to initialize API: {}", e)
+        Err(e) => bail!("Failed to initialize API: {}", e),
     };
 
-    let result = match api
-        .storage()
-        .at_latest()
-        .await {
-            Ok(mid_result) => {
-                match mid_result.fetch(query).await {
-                    Ok(Some(result)) => {
-                        Ok(result)
-                    },
-                    Ok(None) => {
-                        bail!("Value not found in storage for query");
-                    },
-                    Err(e) => {
-                        bail!("Failed to retrieve data from storage: {}", e);
-                    }
-                }
-            },
-            Err(e) => {
-                bail!("Failed to fetch data from storage: {}", e);
+    let result = match api.storage().at_latest().await {
+        Ok(mid_result) => match mid_result.fetch(query).await {
+            Ok(Some(result)) => Ok(result),
+            Ok(None) => {
+                bail!("Value not found in storage for query");
             }
-        };
+            Err(e) => {
+                bail!("Failed to retrieve data from storage: {}", e);
+            }
+        },
+        Err(e) => {
+            bail!("Failed to fetch data from storage: {}", e);
+        }
+    };
 
-   
     result
 }

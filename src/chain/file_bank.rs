@@ -1,7 +1,6 @@
-use std::any;
+use std::arch::x86_64::CpuidResult;
 
 use super::Sdk;
-use crate::core::utils::{bucket, hash};
 use crate::utils::{hex_string_to_bytes, query_storage};
 use crate::{init_api, polkadot};
 use anyhow::{anyhow, bail, Error, Result};
@@ -10,15 +9,17 @@ use polkadot::{
     file_bank::events::{CreateBucket, DeleteBucket},
     runtime_types::{
         cp_cess_common::Hash as CPHash,
-        pallet_file_bank::types::{BucketInfo, DealInfo, FileInfo},
+        pallet_file_bank::types::{
+            BucketInfo, DealInfo, FileInfo, RestoralTargetInfo, RestoralOrderInfo, UserFileSliceInfo,
+        },
         sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
 use sp_keyring::AccountKeyring;
 use subxt::tx::PairSigner;
+use subxt::utils::AccountId32;
 
 impl Sdk {
-
     // query_storage_order
     pub async fn query_storage_order(&self, root_hash: &str) -> Result<DealInfo> {
         let hash_bytes = hex_string_to_bytes(root_hash);
@@ -27,12 +28,8 @@ impl Sdk {
 
         let result = query_storage(&query).await;
         match result {
-            Ok(value) => {
-                Ok(value)
-            },
-            Err(e) => {
-                Err(e)
-            }
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
         }
     }
 
@@ -44,12 +41,28 @@ impl Sdk {
 
         let result = query_storage(&query).await;
         match result {
-            Ok(value) => {
-                Ok(value)
-            },
-            Err(e) => {
-                Err(e)
-            }
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
+        }
+    }
+
+    // query_user_hold_file_list
+    pub async fn query_user_hold_file_list(
+        &self,
+        pk: &[u8],
+    ) -> Result<BoundedVec<UserFileSliceInfo>> {
+        let account =
+            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+
+        let query = polkadot::storage()
+            .file_bank()
+            .user_hold_file_list(&account.to_account_id().into());
+
+        let result = query_storage(&query).await;
+
+        match result {
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
         }
     }
 
@@ -64,12 +77,40 @@ impl Sdk {
 
         let result = query_storage(&query).await;
         match result {
-            Ok(value) => {
-                Ok(value)
-            },
-            Err(e) => {
-                Err(e)
-            }
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
+        }
+    }
+
+    // query_invalid_file
+    pub async fn query_invalid_file(&self, pk: &[u8]) -> Result<BoundedVec<CPHash>> {
+        let account =
+            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+
+        let query = polkadot::storage()
+            .file_bank()
+            .invalid_file(&account.to_account_id().into());
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
+        }
+    }
+
+    // query_miner_lock
+    pub async fn query_miner_lock(&self, pk: &[u8]) -> Result<u32> {
+        let account =
+            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+
+        let query = polkadot::storage()
+            .file_bank()
+            .miner_lock(&account.to_account_id().into());
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
         }
     }
 
@@ -86,17 +127,13 @@ impl Sdk {
 
         let result = query_storage(&query).await;
         match result {
-            Ok(value) => {
-                Ok(value)
-            },
-            Err(e) => {
-                Err(e)
-            }
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
         }
     }
 
-    // query_bucket_list
-    pub async fn query_bucket_list(&self, pk: &[u8]) -> Result<BoundedVec<BoundedVec<u8>>> {
+    // query_user_bucket_list
+    pub async fn query_user_bucket_list(&self, pk: &[u8]) -> Result<BoundedVec<BoundedVec<u8>>> {
         let account =
             AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
 
@@ -106,18 +143,14 @@ impl Sdk {
 
         let result = query_storage(&query).await;
         match result {
-            Ok(value) => {
-                Ok(value)
-            },
-            Err(e) => {
-                Err(e)
-            }
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
         }
     }
 
     // query_all_bucket_name
-    pub async fn query_all_bucket_name(&self, owner: &[u8]) -> Result<Vec<String>> {
-        match self.query_bucket_list(owner).await {
+    pub async fn query_all_bucket_name(&self, pk: &[u8]) -> Result<Vec<String>> {
+        match self.query_user_bucket_list(pk).await {
             Ok(bucketlist) => {
                 let buckets: Vec<String> = bucketlist
                     .0
@@ -132,12 +165,38 @@ impl Sdk {
         }
     }
 
-    pub async fn query_restoral_target(&self) -> Result<()> {
-        Ok(())
+    pub async fn query_restoral_target(
+        &self,
+        pk: &[u8],
+    ) -> Result<RestoralTargetInfo<AccountId32, u32>> {
+        let account =
+            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+
+        let query = polkadot::storage()
+            .file_bank()
+            .restoral_target(&account.to_account_id().into());
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
+        }
     }
 
-    pub async fn query_restoral_targetlist(&self) -> Result<()> {
-        Ok(())
+    pub async fn query_restoral_target_list(&self, hash: &str) -> Result<RestoralOrderInfo> {
+ 
+        let hash_bytes = hex_string_to_bytes(hash);
+        let hash = CPHash(hash_bytes);
+
+        let query = polkadot::storage()
+            .file_bank()
+            .restoral_order(&hash);
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
+        }
     }
 
     pub async fn query_restoral_order(&self) -> Result<()> {
@@ -255,8 +314,7 @@ impl Sdk {
     pub async fn replace_file(&self) -> Result<()> {
         Ok(())
     }
-    
-    
+
     pub async fn generate_restoral_order(&self) -> Result<()> {
         Ok(())
     }
@@ -266,7 +324,6 @@ impl Sdk {
     pub async fn claim_restoral_no_exist_order(&self) -> Result<()> {
         Ok(())
     }
-   
 
     pub async fn restoral_complete(&self) -> Result<()> {
         Ok(())

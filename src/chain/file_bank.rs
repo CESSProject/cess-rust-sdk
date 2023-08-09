@@ -2,7 +2,7 @@ use std::any;
 
 use super::Sdk;
 use crate::core::utils::{bucket, hash};
-use crate::utils::hex_string_to_bytes;
+use crate::utils::{hex_string_to_bytes, query_storage};
 use crate::{init_api, polkadot};
 use anyhow::{anyhow, bail, Error, Result};
 use log::{info, warn};
@@ -10,7 +10,7 @@ use polkadot::{
     file_bank::events::{CreateBucket, DeleteBucket},
     runtime_types::{
         cp_cess_common::Hash as CPHash,
-        pallet_file_bank::types::{BucketInfo, DealInfo, FileInfo, FillerInfo},
+        pallet_file_bank::types::{BucketInfo, DealInfo, FileInfo},
         sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
@@ -18,49 +18,101 @@ use sp_keyring::AccountKeyring;
 use subxt::tx::PairSigner;
 
 impl Sdk {
+
+    // query_storage_order
+    pub async fn query_storage_order(&self, root_hash: &str) -> Result<DealInfo> {
+        let hash_bytes = hex_string_to_bytes(root_hash);
+        let hash = CPHash(hash_bytes);
+        let query = polkadot::storage().file_bank().deal_map(hash);
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => {
+                Ok(value)
+            },
+            Err(e) => {
+                Err(e)
+            }
+        }
+    }
+
+    // query_file_metadata
+    pub async fn query_file_metadata(&self, root_hash: &str) -> Result<FileInfo> {
+        let hash_bytes = hex_string_to_bytes(root_hash);
+        let hash = CPHash(hash_bytes);
+        let query = polkadot::storage().file_bank().file(hash);
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => {
+                Ok(value)
+            },
+            Err(e) => {
+                Err(e)
+            }
+        }
+    }
+
+    // query_pending_replacements
+    pub async fn query_pending_replacements(&self, pk: &[u8]) -> Result<u128> {
+        let account =
+            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+
+        let query = polkadot::storage()
+            .file_bank()
+            .pending_replacements(&account.to_account_id().into());
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => {
+                Ok(value)
+            },
+            Err(e) => {
+                Err(e)
+            }
+        }
+    }
+
     // query_bucket_info
     pub async fn query_bucket_info(&self, pk: &[u8], bucket_name: &str) -> Result<BucketInfo> {
-        let api = init_api().await?;
-
         let account =
             AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
 
         let name_bytes: BoundedVec<u8> = BoundedVec(bucket_name.as_bytes().to_vec());
 
-        let storage_query = polkadot::storage()
+        let query = polkadot::storage()
             .file_bank()
             .bucket(&account.to_account_id().into(), name_bytes);
 
-        let result = api
-            .storage()
-            .at_latest()
-            .await?
-            .fetch(&storage_query)
-            .await?;
-        let value = result.unwrap();
-
-        Ok(value)
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => {
+                Ok(value)
+            },
+            Err(e) => {
+                Err(e)
+            }
+        }
     }
 
     // query_bucket_list
     pub async fn query_bucket_list(&self, pk: &[u8]) -> Result<BoundedVec<BoundedVec<u8>>> {
-        let api = init_api().await?;
         let account =
             AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
 
-        let storage_query = polkadot::storage()
+        let query = polkadot::storage()
             .file_bank()
             .user_bucket_list(&account.to_account_id().into());
 
-        let result = api
-            .storage()
-            .at_latest()
-            .await?
-            .fetch(&storage_query)
-            .await?;
-
-        let value = result.unwrap();
-        Ok(value)
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => {
+                Ok(value)
+            },
+            Err(e) => {
+                Err(e)
+            }
+        }
     }
 
     // query_all_bucket_name
@@ -80,102 +132,21 @@ impl Sdk {
         }
     }
 
-    // query_file_metadata
-    pub async fn query_file_metadata(&self, root_hash: &str) -> Result<FileInfo> {
-        // This need to be tested after file upload
-        let api = init_api().await?;
-
-        let hash_bytes = hex_string_to_bytes(root_hash);
-        let hash = CPHash(hash_bytes);
-        let storage_query = polkadot::storage().file_bank().file(hash);
-
-        let result = api
-            .storage()
-            .at_latest()
-            .await?
-            .fetch(&storage_query)
-            .await?;
-        let value = result.unwrap();
-
-        Ok(value)
+    pub async fn query_restoral_target(&self) -> Result<()> {
+        Ok(())
     }
 
-    // query_filler_map
-    pub async fn query_filler_map(&self, pk: &[u8], file_hash: &str) -> Result<FillerInfo> {
-        // TODO: get the account from self and remove the pk parameter.
-
-        let api = init_api().await?;
-
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
-
-        let hash_bytes = hex_string_to_bytes(file_hash);
-        let hash = CPHash(hash_bytes);
-        let storage_query = polkadot::storage()
-            .file_bank()
-            .filler_map(&account.to_account_id().into(), hash);
-
-        let result = api
-            .storage()
-            .at_latest()
-            .await?
-            .fetch(&storage_query)
-            .await?;
-        let value = result.unwrap();
-
-        Ok(value)
+    pub async fn query_restoral_targetlist(&self) -> Result<()> {
+        Ok(())
     }
 
-    // query_storage_order
-    pub async fn query_storage_order(&self, root_hash: &str) -> Result<DealInfo> {
-        let api = init_api().await?;
-
-        let hash_bytes = hex_string_to_bytes(root_hash);
-        let hash = CPHash(hash_bytes);
-        let storage_query = polkadot::storage().file_bank().deal_map(hash);
-
-        let result = api
-            .storage()
-            .at_latest()
-            .await?
-            .fetch(&storage_query)
-            .await?;
-        let value = result.unwrap();
-
-        Ok(value)
+    pub async fn query_restoral_order(&self) -> Result<()> {
+        Ok(())
     }
 
-    // query_pending_replacements
-    pub async fn query_pending_replacements(&self, pk: &[u8]) -> Result<u32> {
-        let api = init_api().await?;
-
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
-
-        let storage_query = polkadot::storage()
-            .file_bank()
-            .pending_replacements(&account.to_account_id().into());
-
-        let result = api
-            .storage()
-            .at_latest()
-            .await?
-            .fetch(&storage_query)
-            .await?;
-        let value = result.unwrap();
-
-        Ok(value)
+    pub async fn query_restoral_order_list(&self) -> Result<()> {
+        Ok(())
     }
-
-    // // submit_idle_metadata
-    // pub async fn submit_idle_metadata(&self, tee_acc: &[u8], idle_files: IdleMetadata) -> Result<String> {
-    //     Ok("".to_string())
-    // }
-
-    // // submit_idle_file
-    // pub async fn submit_idle_file(&self, tee_acc: &[u8], idle_file: IdleFileMeta) -> Result<String> {
-    //     Ok("".to_string())
-    // }
 
     // create_bucket
     pub async fn create_bucket(&self, pk: &[u8], name: &str) -> Result<String> {
@@ -185,14 +156,14 @@ impl Sdk {
 
         let name_bytes: BoundedVec<u8> = BoundedVec(name.as_bytes().to_vec());
 
-        let create_bucket_tx = polkadot::tx()
+        let tx = polkadot::tx()
             .file_bank()
             .create_bucket(account.to_account_id().into(), name_bytes);
         let from = PairSigner::new(account.pair());
 
         let events = match api
             .tx()
-            .sign_and_submit_then_watch_default(&create_bucket_tx, &from)
+            .sign_and_submit_then_watch_default(&tx, &from)
             .await
         {
             Ok(result) => match result.wait_for_finalized_success().await {
@@ -284,12 +255,8 @@ impl Sdk {
     pub async fn replace_file(&self) -> Result<()> {
         Ok(())
     }
-    pub async fn query_restoral_order(&self) -> Result<()> {
-        Ok(())
-    }
-    pub async fn query_restoral_target(&self) -> Result<()> {
-        Ok(())
-    }
+    
+    
     pub async fn generate_restoral_order(&self) -> Result<()> {
         Ok(())
     }
@@ -299,12 +266,8 @@ impl Sdk {
     pub async fn claim_restoral_no_exist_order(&self) -> Result<()> {
         Ok(())
     }
-    pub async fn query_restoral_order_list(&self) -> Result<()> {
-        Ok(())
-    }
-    pub async fn query_restoral_targetlist(&self) -> Result<()> {
-        Ok(())
-    }
+   
+
     pub async fn restoral_complete(&self) -> Result<()> {
         Ok(())
     }
@@ -325,10 +288,11 @@ mod test {
         let sdk = Sdk::new("service_name");
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
-        let name = "MySecondBucket";
+        let name = "MyFirstBucket";
         let result = sdk.query_bucket_info(&pk_bytes, name).await;
         match result {
-            Ok(_) => {
+            Ok(v) => {
+                println!("{:?}", v);
                 assert!(true);
             }
             Err(_) => {
@@ -360,7 +324,8 @@ mod test {
         let pk_bytes = hex::decode(pk).unwrap();
         let result = sdk.query_bucket_list(&pk_bytes).await;
         match result {
-            Ok(_) => {
+            Ok(v) => {
+                println!("{:?}", v);
                 assert!(true);
             }
             Err(_) => {

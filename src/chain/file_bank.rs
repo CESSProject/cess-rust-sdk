@@ -355,7 +355,7 @@ impl Sdk {
 #[cfg(test)]
 mod test {
     use crate::chain::Sdk;
-    const MNEMONIC: &str = "bottom drive obey lake curtain smoke basket hold race lonely fit walk";
+    const MNEMONIC: &str = "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
     #[tokio::test]
     async fn test_query_bucket_info() {
         let sdk = Sdk::new(

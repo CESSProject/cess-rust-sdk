@@ -1,15 +1,15 @@
 use super::Sdk;
+use crate::polkadot;
 use crate::utils::{account_from_slice, hex_string_to_bytes, query_storage, sign_and_submit_tx};
-use crate::{init_api, polkadot};
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use log::info;
 use polkadot::{
-    file_bank::events::{CreateBucket, DeleteBucket},
+    file_bank::events::{CreateBucket, DeleteBucket, DeleteFile, UploadDeclaration},
     runtime_types::{
         cp_cess_common::Hash as CPHash,
         pallet_file_bank::types::{
-            BucketInfo, DealInfo, FileInfo, RestoralOrderInfo, RestoralTargetInfo,
-            UserFileSliceInfo,
+            BucketInfo, DealInfo, FileInfo, RestoralOrderInfo, RestoralTargetInfo, SegmentList,
+            UserBrief, UserFileSliceInfo,
         },
         sp_core::bounded::bounded_vec::BoundedVec,
     },
@@ -192,10 +192,68 @@ impl Sdk {
     }
 
     /* Transactional functions */
-    // // upload_declaration
-    // pub async fn upload_declaration(&self, file_hash: &str, deal_info: SegmentList, user: UserBrief, file_size: u64) -> Result<String> {
-    //     Ok("".to_string())
-    // }
+    // upload_declaration
+    pub async fn upload_declaration(
+        &self,
+        file_hash: &str,
+        deal_info: BoundedVec<SegmentList>,
+        user: UserBrief,
+        file_size: u128,
+    ) -> Result<String> {
+        let hash_bytes = hex_string_to_bytes(file_hash);
+        let hash = CPHash(hash_bytes);
+
+        let tx = polkadot::tx()
+            .file_bank()
+            .upload_declaration(hash, deal_info, user, file_size);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(upload_declaration) = events.find_first::<UploadDeclaration>()? {
+            info!("Upload declaration: {:?}", upload_declaration);
+            return Ok(tx_hash);
+        } else {
+            bail!("Unable to upload declaration");
+        }
+    }
+
+    // delete_file
+    pub async fn delete_file(
+        &self,
+        pk: &[u8],
+        file_hash: Vec<String>,
+    ) -> Result<(String, Vec<CPHash>)> {
+        let account = account_from_slice(pk);
+
+        let file_hash: Vec<CPHash> = file_hash
+            .iter()
+            .map(|hash| {
+                let hash_bytes = hex_string_to_bytes(hash);
+                CPHash(hash_bytes)
+            })
+            .collect();
+
+        let tx = polkadot::tx().file_bank().delete_file(account, file_hash);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(delete_file) = events.find_first::<DeleteFile>()? {
+            info!("File(s) deleted: {:?}", delete_file);
+            return Ok((tx_hash, delete_file.file_hash_list));
+        } else {
+            bail!("Unable to delete file");
+        }
+    }
+
+    pub async fn cert_idle_space(&self) -> Result<()> {
+        Ok(())
+    }
 
     // create_bucket
     pub async fn create_bucket(&self, pk: &[u8], name: &str) -> Result<String> {
@@ -243,12 +301,6 @@ impl Sdk {
         }
     }
 
-    // delete_file
-    pub async fn delete_file(&self, pk: &[u8], file_hash: Vec<String>) -> Result<String> {
-        // Return type need to have two values: (string, FileHash)
-        Ok("".to_string())
-    }
-
     pub async fn delete_filler(&self, file_hash: &str) -> Result<String> {
         Ok("".to_string())
     }
@@ -279,9 +331,7 @@ impl Sdk {
     pub async fn restoral_complete(&self) -> Result<()> {
         Ok(())
     }
-    pub async fn cert_idle_space(&self) -> Result<()> {
-        Ok(())
-    }
+
     pub async fn replace_idle_space(&self) -> Result<()> {
         Ok(())
     }

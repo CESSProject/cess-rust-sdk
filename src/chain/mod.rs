@@ -10,7 +10,9 @@ pub struct Sdk {
 
 impl Sdk {
     pub fn new(mnemonic: &str, service_name: &str) -> Self {
-        let pair = <sp_keyring::sr25519::sr25519::Pair as sp_core_pair>::from_string(mnemonic, None).unwrap();
+        let pair =
+            <sp_keyring::sr25519::sr25519::Pair as sp_core_pair>::from_string(mnemonic, None)
+                .unwrap();
         Self {
             pair,
             name: service_name.to_string(),

@@ -1,22 +1,19 @@
 mod file_bank;
 
-use std::time::Duration;
-#[derive(Default)]
+use sp_keyring::sr25519::sr25519::Pair;
+use subxt::ext::sp_core::Pair as sp_core_pair;
+
 pub struct Sdk {
-    rpc_addr: Vec<String>,
-    packing_time: Duration,
-    token_symbol: String,
-    network_env: String,
-    signature_acc: String,
+    pair: Pair,
     name: String,
-    enabled_p2p: bool,
 }
 
 impl Sdk {
-    pub fn new(service_name: &str) -> Self {
+    pub fn new(mnemonic: &str, service_name: &str) -> Self {
+        let pair = <sp_keyring::sr25519::sr25519::Pair as sp_core_pair>::from_phrase(mnemonic, None).unwrap().0;
         Self {
+            pair,
             name: service_name.to_string(),
-            ..Default::default()
         }
     }
 
@@ -26,17 +23,5 @@ impl Sdk {
 
     pub fn set_sdk_name(&mut self, name: &str) {
         self.name = name.to_string();
-    }
-
-    pub fn get_signature_acc(&self) -> &str {
-        &self.signature_acc
-    }
-
-    pub fn get_network_env(&self) -> &str {
-        &self.network_env
-    }
-
-    pub fn is_p2p_enabled(&self) -> bool {
-        self.enabled_p2p
     }
 }

@@ -1,10 +1,8 @@
-use std::arch::x86_64::CpuidResult;
-
 use super::Sdk;
 use crate::utils::{hex_string_to_bytes, query_storage};
 use crate::{init_api, polkadot};
-use anyhow::{anyhow, bail, Error, Result};
-use log::{info, warn};
+use anyhow::{anyhow, bail, Result};
+use log::info;
 use polkadot::{
     file_bank::events::{CreateBucket, DeleteBucket},
     runtime_types::{
@@ -15,7 +13,6 @@ use polkadot::{
         sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
-use sp_keyring::AccountKeyring;
 use subxt::tx::PairSigner;
 use subxt::utils::AccountId32;
 
@@ -51,12 +48,14 @@ impl Sdk {
         &self,
         pk: &[u8],
     ) -> Result<BoundedVec<UserFileSliceInfo>> {
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let query = polkadot::storage()
             .file_bank()
-            .user_hold_file_list(&account.to_account_id().into());
+            .user_hold_file_list(&account);
 
         let result = query_storage(&query).await;
 
@@ -68,12 +67,14 @@ impl Sdk {
 
     // query_pending_replacements
     pub async fn query_pending_replacements(&self, pk: &[u8]) -> Result<u128> {
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let query = polkadot::storage()
             .file_bank()
-            .pending_replacements(&account.to_account_id().into());
+            .pending_replacements(&account);
 
         let result = query_storage(&query).await;
         match result {
@@ -84,12 +85,14 @@ impl Sdk {
 
     // query_invalid_file
     pub async fn query_invalid_file(&self, pk: &[u8]) -> Result<BoundedVec<CPHash>> {
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let query = polkadot::storage()
             .file_bank()
-            .invalid_file(&account.to_account_id().into());
+            .invalid_file(&account);
 
         let result = query_storage(&query).await;
         match result {
@@ -100,12 +103,14 @@ impl Sdk {
 
     // query_miner_lock
     pub async fn query_miner_lock(&self, pk: &[u8]) -> Result<u32> {
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let query = polkadot::storage()
             .file_bank()
-            .miner_lock(&account.to_account_id().into());
+            .miner_lock(&account);
 
         let result = query_storage(&query).await;
         match result {
@@ -116,14 +121,16 @@ impl Sdk {
 
     // query_bucket_info
     pub async fn query_bucket_info(&self, pk: &[u8], bucket_name: &str) -> Result<BucketInfo> {
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let name_bytes: BoundedVec<u8> = BoundedVec(bucket_name.as_bytes().to_vec());
 
         let query = polkadot::storage()
             .file_bank()
-            .bucket(&account.to_account_id().into(), name_bytes);
+            .bucket(&account, name_bytes);
 
         let result = query_storage(&query).await;
         match result {
@@ -134,12 +141,14 @@ impl Sdk {
 
     // query_user_bucket_list
     pub async fn query_user_bucket_list(&self, pk: &[u8]) -> Result<BoundedVec<BoundedVec<u8>>> {
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let query = polkadot::storage()
             .file_bank()
-            .user_bucket_list(&account.to_account_id().into());
+            .user_bucket_list(&account);
 
         let result = query_storage(&query).await;
         match result {
@@ -169,12 +178,14 @@ impl Sdk {
         &self,
         pk: &[u8],
     ) -> Result<RestoralTargetInfo<AccountId32, u32>> {
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let query = polkadot::storage()
             .file_bank()
-            .restoral_target(&account.to_account_id().into());
+            .restoral_target(&account);
 
         let result = query_storage(&query).await;
         match result {
@@ -210,15 +221,18 @@ impl Sdk {
     // create_bucket
     pub async fn create_bucket(&self, pk: &[u8], name: &str) -> Result<String> {
         let api = init_api().await?;
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
 
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
         let name_bytes: BoundedVec<u8> = BoundedVec(name.as_bytes().to_vec());
 
         let tx = polkadot::tx()
             .file_bank()
-            .create_bucket(account.to_account_id().into(), name_bytes);
-        let from = PairSigner::new(account.pair());
+            .create_bucket(account, name_bytes);
+
+        let from = PairSigner::new(self.pair.clone());
 
         let events = match api
             .tx()
@@ -228,12 +242,12 @@ impl Sdk {
             Ok(result) => match result.wait_for_finalized_success().await {
                 Ok(r) => r,
                 Err(e) => {
-                    let err = anyhow!("Error waiting for finalized success: {:?}", e);
+                    let err = anyhow!("Error waiting for finalized success: {}", e);
                     bail!("{}", err);
                 }
             },
             Err(e) => {
-                let err = anyhow!("Error signing and submitting transaction: {:?}", e);
+                let err = anyhow!("Error signing and submitting transaction: {}", e);
                 bail!("{}", err);
             }
         };
@@ -250,15 +264,17 @@ impl Sdk {
     // delete_bucket
     pub async fn delete_bucket(&self, pk: &[u8], name: &str) -> Result<String> {
         let api = init_api().await?;
-        let account =
-            AccountKeyring::from_raw_public(pk.try_into().expect("Invalid slice length")).unwrap();
+        let mut pk_array = [0u8; 32];
+        pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
+        
+        let account = AccountId32::from(pk_array);
 
         let name_bytes: BoundedVec<u8> = BoundedVec(name.as_bytes().to_vec());
 
         let delete_bucket_tx = polkadot::tx()
             .file_bank()
-            .delete_bucket(account.to_account_id().into(), name_bytes);
-        let from = PairSigner::new(account.pair());
+            .delete_bucket(account, name_bytes);
+        let from = PairSigner::new(self.pair.clone());
 
         let events = match api
             .tx()
@@ -339,19 +355,21 @@ impl Sdk {
 #[cfg(test)]
 mod test {
     use crate::chain::Sdk;
-
+    const MNEMONIC: &str = "bottom drive obey lake curtain smoke basket hold race lonely fit walk";
     #[tokio::test]
     async fn test_query_bucket_info() {
-        let sdk = Sdk::new("service_name");
+        let sdk = Sdk::new(
+            MNEMONIC,
+            "service_name"
+        );
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
         let name = "MyFirstBucket";
         let result = sdk.query_bucket_info(&pk_bytes, name).await;
         match result {
             Ok(v) => {
-                println!("{:?}", v);
                 assert!(true);
-            }
+            },
             Err(_) => {
                 assert!(false);
             }
@@ -360,14 +378,17 @@ mod test {
 
     #[tokio::test]
     async fn test_query_all_bucket_name() {
-        let sdk = Sdk::new("service_name");
+        let sdk = Sdk::new(
+            MNEMONIC,
+            "service_name"
+        );
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
         let result = sdk.query_all_bucket_name(&pk_bytes).await;
         match result {
             Ok(_) => {
                 assert!(true);
-            }
+            },
             Err(_) => {
                 assert!(false);
             }
@@ -375,16 +396,18 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_query_bucket_list() {
-        let sdk = Sdk::new("service_name");
+    async fn test_query_user_bucket_list() {
+        let sdk = Sdk::new(
+            MNEMONIC,
+            "service_name"
+        );
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
-        let result = sdk.query_bucket_list(&pk_bytes).await;
+        let result = sdk.query_user_bucket_list(&pk_bytes).await;
         match result {
             Ok(v) => {
-                println!("{:?}", v);
                 assert!(true);
-            }
+            },
             Err(_) => {
                 assert!(false);
             }
@@ -393,7 +416,10 @@ mod test {
 
     #[tokio::test]
     async fn test_create_bucket() {
-        let sdk = Sdk::new("service_name");
+        let sdk = Sdk::new(
+            MNEMONIC,
+            "service_name"
+        );
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
         let name = "MyFirstBucket";
@@ -401,8 +427,9 @@ mod test {
         match result {
             Ok(_) => {
                 assert!(true);
-            }
-            Err(_) => {
+            },
+            Err(e) => {
+                println!("{:?}", e);
                 assert!(false);
             }
         }
@@ -410,7 +437,11 @@ mod test {
 
     #[tokio::test]
     async fn test_delete_bucket() {
-        let sdk = Sdk::new("service_name");
+        let sdk = Sdk::new(
+            MNEMONIC,
+            PASSWORD,
+            "service_name"
+        );
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
         let name = "MyFirstBucket";

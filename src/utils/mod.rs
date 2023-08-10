@@ -1,8 +1,6 @@
 use anyhow::{bail, Result};
-use subxt::{
-    storage::{address::Yes, StorageAddress},
-    Error,
-};
+use subxt::storage::{address::Yes, StorageAddress};
+
 
 use crate::init_api;
 

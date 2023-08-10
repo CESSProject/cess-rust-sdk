@@ -439,7 +439,6 @@ mod test {
     async fn test_delete_bucket() {
         let sdk = Sdk::new(
             MNEMONIC,
-            PASSWORD,
             "service_name"
         );
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";

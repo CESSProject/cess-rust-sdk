@@ -1,5 +1,4 @@
 use super::Sdk;
-use crate::core::utils::account;
 use crate::polkadot;
 use crate::utils::{
     account_from_slice, hash_from_string, query_storage, sign_and_sbmit_tx_default,

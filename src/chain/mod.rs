@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod file_bank;
+pub mod deoss;
 
 use sp_keyring::sr25519::sr25519::Pair;
 use subxt::ext::sp_core::Pair as sp_core_pair;

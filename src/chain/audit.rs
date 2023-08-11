@@ -6,15 +6,14 @@ use crate::utils::{
 };
 use anyhow::{bail, Result};
 use polkadot::{
-    audit::{calls::TransactionApi, 
-        events::{
-        SubmitIdleProof,
-        SubmitServiceProof,
-    }
-        , storage::StorageApi},
+    audit::{
+        calls::TransactionApi,
+        events::{SubmitIdleProof, SubmitServiceProof},
+        storage::StorageApi,
+    },
     runtime_types::{
-        cp_cess_common::{Hash as CPHash, SpaceProofInfo},
         cp_bloom_filter::BloomFilter,
+        cp_cess_common::{Hash as CPHash, SpaceProofInfo},
         pallet_audit::{
             sr25519::app_sr25519::{Public, Signature},
             types::{ChallengeInfo, IdleProveInfo, SegDigest, ServiceProveInfo},
@@ -35,6 +34,7 @@ fn audit_tx() -> TransactionApi {
 
 impl Sdk {
     /* Query functions */
+    // query_challenge_duration
     pub async fn query_challenge_duration(&self) -> Result<u32> {
         let query = audit_storage().challenge_duration();
 
@@ -45,6 +45,7 @@ impl Sdk {
         }
     }
 
+    // query_verify_duration
     pub async fn query_verify_duration(&self) -> Result<u32> {
         let query = audit_storage().verify_duration();
 
@@ -55,6 +56,7 @@ impl Sdk {
         }
     }
 
+    // query_cur_authority_index
     pub async fn query_cur_authority_index(&self) -> Result<u16> {
         let query = audit_storage().cur_authority_index();
 
@@ -65,6 +67,7 @@ impl Sdk {
         }
     }
 
+    // query_keys
     pub async fn query_keys(&self) -> Result<WeakBoundedVec<Public>> {
         let query = audit_storage().keys();
 
@@ -75,6 +78,7 @@ impl Sdk {
         }
     }
 
+    // query_challenge_proposal
     pub async fn query_challenge_proposal(&self, slice: &[u8; 32]) -> Result<(u32, ChallengeInfo)> {
         let query = audit_storage().challenge_proposal(slice);
 
@@ -85,6 +89,7 @@ impl Sdk {
         }
     }
 
+    // query_challenge_snap_shot
     pub async fn query_challenge_snap_shot(&self) -> Result<ChallengeInfo> {
         let query = audit_storage().challenge_snap_shot();
 
@@ -95,6 +100,7 @@ impl Sdk {
         }
     }
 
+    // query_counted_idle_failed
     pub async fn query_counted_idle_failed(&self, pk: &[u8]) -> Result<u32> {
         let account = account_from_slice(pk);
 
@@ -107,6 +113,7 @@ impl Sdk {
         }
     }
 
+    // query_counted_service_failed
     pub async fn query_counted_service_failed(&self, pk: &[u8]) -> Result<u32> {
         let account = account_from_slice(pk);
 
@@ -119,6 +126,7 @@ impl Sdk {
         }
     }
 
+    // query_counted_clear
     pub async fn query_counted_clear(&self, pk: &[u8]) -> Result<u8> {
         let account = account_from_slice(pk);
 
@@ -131,6 +139,7 @@ impl Sdk {
         }
     }
 
+    // query_challenge_era
     pub async fn query_challenge_era(&self) -> Result<u32> {
         let query = audit_storage().challenge_era();
 
@@ -141,6 +150,7 @@ impl Sdk {
         }
     }
 
+    // query_unverify_idle_proof
     pub async fn query_unverify_idle_proof(&self, pk: &[u8]) -> Result<BoundedVec<IdleProveInfo>> {
         let account = account_from_slice(pk);
 
@@ -153,6 +163,7 @@ impl Sdk {
         }
     }
 
+    // query_unverify_service_proof
     pub async fn query_unverify_service_proof(
         &self,
         pk: &[u8],
@@ -168,6 +179,7 @@ impl Sdk {
         }
     }
 
+    // query_verify_result
     pub async fn query_verify_result(&self, pk: &[u8]) -> Result<(Option<bool>, Option<bool>)> {
         let account = account_from_slice(pk);
 
@@ -180,6 +192,7 @@ impl Sdk {
         }
     }
 
+    // query_lock
     pub async fn query_lock(&self) -> Result<bool> {
         let query = audit_storage().lock();
 
@@ -190,6 +203,7 @@ impl Sdk {
         }
     }
 
+    // query_verify_reassign_count
     pub async fn query_verify_reassign_count(&self) -> Result<u8> {
         let query = audit_storage().verify_reassign_count();
 
@@ -202,6 +216,7 @@ impl Sdk {
 
     /* Transactional functions */
 
+    // save_challenge_info
     pub async fn save_challenge_info(
         &self,
         challenge_info: ChallengeInfo,
@@ -218,6 +233,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
+    // submit_idle_proof
     pub async fn submit_idle_proof(
         &self,
         idle_prove: BoundedVec<u8>,
@@ -236,6 +252,7 @@ impl Sdk {
         }
     }
 
+    // submit_service_proof
     pub async fn submit_service_proof(
         &self,
         service_prove: BoundedVec<u8>,
@@ -254,11 +271,12 @@ impl Sdk {
         }
     }
 
+    // submit_verify_idle_result
     pub async fn submit_verify_idle_result(
-        &self, 
+        &self,
         miner: &[u8],
         idle_result: bool,
-        signature: &[u8; 256]
+        signature: &[u8; 256],
     ) -> Result<String> {
         let account = account_from_slice(miner);
         let tx = audit_tx().submit_verify_idle_result(account, idle_result, *signature);
@@ -270,15 +288,21 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
+    // submit_verify_service_result
     pub async fn submit_verify_service_result(
         &self,
         miner: &[u8],
         service_result: bool,
         signature: &[u8; 256],
-        service_bloom_filter: BloomFilter
+        service_bloom_filter: BloomFilter,
     ) -> Result<String> {
         let account = account_from_slice(miner);
-        let tx = audit_tx().submit_verify_service_result(account, service_result, *signature, service_bloom_filter);
+        let tx = audit_tx().submit_verify_service_result(
+            account,
+            service_result,
+            *signature,
+            service_bloom_filter,
+        );
 
         let from = PairSigner::new(self.pair.clone());
 
@@ -286,5 +310,4 @@ impl Sdk {
 
         Ok(hash.to_string())
     }
-
 }

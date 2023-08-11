@@ -1,12 +1,21 @@
 use super::Sdk;
 use crate::polkadot;
-use crate::utils::{account_from_slice, hex_string_to_bytes, query_storage, sign_and_submit_tx};
+use crate::utils::{
+    account_from_slice, hash_from_string, query_storage, sign_and_sbmit_tx_default,
+    sign_and_submit_tx_then_watch_default,
+};
 use anyhow::{bail, Result};
 use log::info;
 use polkadot::{
-    file_bank::events::{CreateBucket, DeleteBucket, DeleteFile, UploadDeclaration},
+    file_bank::{
+        calls::types::{DealReassignMiner, OwnershipTransfer},
+        events::{
+            CalculateEnd, ClaimRestoralOrder, CreateBucket, DeleteBucket, DeleteFile,
+            GenerateRestoralOrder, TransferReport, UploadDeclaration, MinerExitPrep
+        },
+    },
     runtime_types::{
-        cp_cess_common::Hash as CPHash,
+        cp_cess_common::{Hash as CPHash, SpaceProofInfo},
         pallet_file_bank::types::{
             BucketInfo, DealInfo, FileInfo, RestoralOrderInfo, RestoralTargetInfo, SegmentList,
             UserBrief, UserFileSliceInfo,
@@ -21,8 +30,7 @@ impl Sdk {
     /* Query functions */
     // query_storage_order
     pub async fn query_storage_order(&self, root_hash: &str) -> Result<DealInfo> {
-        let hash_bytes = hex_string_to_bytes(root_hash);
-        let hash = CPHash(hash_bytes);
+        let hash = hash_from_string(root_hash);
         let query = polkadot::storage().file_bank().deal_map(hash);
 
         let result = query_storage(&query).await;
@@ -34,8 +42,7 @@ impl Sdk {
 
     // query_file_metadata
     pub async fn query_file_metadata(&self, root_hash: &str) -> Result<FileInfo> {
-        let hash_bytes = hex_string_to_bytes(root_hash);
-        let hash = CPHash(hash_bytes);
+        let hash = hash_from_string(root_hash);
         let query = polkadot::storage().file_bank().file(hash);
 
         let result = query_storage(&query).await;
@@ -168,8 +175,7 @@ impl Sdk {
 
     // query_restoral_order
     pub async fn query_restoral_order(&self, hash: &str) -> Result<RestoralOrderInfo> {
-        let hash_bytes = hex_string_to_bytes(hash);
-        let hash = CPHash(hash_bytes);
+        let hash = hash_from_string(hash);
 
         let query = polkadot::storage().file_bank().restoral_order(&hash);
 
@@ -200,8 +206,7 @@ impl Sdk {
         user: UserBrief,
         file_size: u128,
     ) -> Result<String> {
-        let hash_bytes = hex_string_to_bytes(file_hash);
-        let hash = CPHash(hash_bytes);
+        let hash = hash_from_string(file_hash);
 
         let tx = polkadot::tx()
             .file_bank()
@@ -209,7 +214,7 @@ impl Sdk {
 
         let from = PairSigner::new(self.pair.clone());
 
-        let events = sign_and_submit_tx(&tx, &from).await?;
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(upload_declaration) = events.find_first::<UploadDeclaration>()? {
@@ -218,6 +223,97 @@ impl Sdk {
         } else {
             bail!("Unable to upload declaration");
         }
+    }
+
+    pub async fn deal_reassign_miner(
+        &self,
+        deal_hash: &str,
+        count: u8,
+        life: u32,
+    ) -> Result<String> {
+        let hash = hash_from_string(deal_hash);
+        let tx = polkadot::tx()
+            .file_bank()
+            .deal_reassign_miner(hash, count, life);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
+    }
+
+    pub async fn ownership_transfer(
+        &self,
+        target_brief: UserBrief,
+        file_hash: &str,
+    ) -> Result<String> {
+        let hash = hash_from_string(file_hash);
+
+        let tx = polkadot::tx()
+            .file_bank()
+            .ownership_transfer(target_brief, hash);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
+    }
+
+    pub async fn transfer_report(&self, deal_hash: Vec<&str>) -> Result<(String, AccountId32)> {
+        let hash: Vec<CPHash> = deal_hash
+            .iter()
+            .map(|hash| hash_from_string(hash))
+            .collect();
+
+        let tx = polkadot::tx().file_bank().transfer_report(hash);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(transfer_report) = events.find_first::<TransferReport>()? {
+            info!("Transfer report: {:?}", transfer_report);
+            return Ok((tx_hash, transfer_report.acc));
+        } else {
+            bail!("Unable to transfer");
+        }
+    }
+
+    pub async fn calculate_end(&self, deal_hash: &str) -> Result<(String, CPHash)> {
+        let hash = hash_from_string(deal_hash);
+
+        let tx = polkadot::tx().file_bank().calculate_end(hash);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(calculate_end) = events.find_first::<CalculateEnd>()? {
+            info!("calculate end: {:?}", calculate_end);
+            return Ok((tx_hash, calculate_end.file_hash));
+        } else {
+            bail!("Unable to transfer");
+        }
+    }
+
+    pub async fn replace_idle_space(
+        &self,
+        idle_sig_info: SpaceProofInfo<AccountId32, u32>,
+        sign: &[u8; 256],
+    ) -> Result<String> {
+        let tx = polkadot::tx()
+            .file_bank()
+            .replace_idle_space(idle_sig_info, *sign);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
     }
 
     // delete_file
@@ -230,17 +326,14 @@ impl Sdk {
 
         let file_hash: Vec<CPHash> = file_hash
             .iter()
-            .map(|hash| {
-                let hash_bytes = hex_string_to_bytes(hash);
-                CPHash(hash_bytes)
-            })
+            .map(|hash| hash_from_string(hash))
             .collect();
 
         let tx = polkadot::tx().file_bank().delete_file(account, file_hash);
 
         let from = PairSigner::new(self.pair.clone());
 
-        let events = sign_and_submit_tx(&tx, &from).await?;
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(delete_file) = events.find_first::<DeleteFile>()? {
@@ -251,8 +344,20 @@ impl Sdk {
         }
     }
 
-    pub async fn cert_idle_space(&self) -> Result<()> {
-        Ok(())
+    pub async fn cert_idle_space(
+        &self,
+        idle_sig_info: SpaceProofInfo<AccountId32, u32>,
+        sign: &[u8; 256],
+    ) -> Result<String> {
+        let tx = polkadot::tx()
+            .file_bank()
+            .cert_idle_space(idle_sig_info, *sign);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
     }
 
     // create_bucket
@@ -267,7 +372,7 @@ impl Sdk {
 
         let from = PairSigner::new(self.pair.clone());
 
-        let events = sign_and_submit_tx(&tx, &from).await?;
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(create_bucket_event) = events.find_first::<CreateBucket>()? {
@@ -290,7 +395,7 @@ impl Sdk {
 
         let from = PairSigner::new(self.pair.clone());
 
-        let events = sign_and_submit_tx(&tx, &from).await?;
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(delete_bucket_event) = events.find_first::<DeleteBucket>()? {
@@ -301,39 +406,127 @@ impl Sdk {
         }
     }
 
-    pub async fn delete_filler(&self, file_hash: &str) -> Result<String> {
-        Ok("".to_string())
+    pub async fn generate_restoral_order(
+        &self,
+        file_hash: &str,
+        restoral_fragment: &str,
+    ) -> Result<String> {
+        let file_hash = hash_from_string(file_hash);
+        let restoral_fragment_hash = hash_from_string(restoral_fragment);
+
+        let tx = polkadot::tx()
+            .file_bank()
+            .generate_restoral_order(file_hash, restoral_fragment_hash);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(generate_restoral_order) = events.find_first::<GenerateRestoralOrder>()? {
+            info!("Generate restoral order: {:?}", generate_restoral_order);
+            return Ok(tx_hash);
+        } else {
+            bail!("Unable to claim restoral order");
+        }
     }
 
-    pub async fn submit_file_report(&self) -> Result<()> {
-        Ok(())
-    }
-    pub async fn report_files(&self) -> Result<()> {
-        Ok(())
-    }
-    pub async fn replace_idle_files(&self) -> Result<()> {
-        Ok(())
-    }
-    pub async fn replace_file(&self) -> Result<()> {
-        Ok(())
+    pub async fn claim_restoral_order(&self, restoral_fragment: &str) -> Result<String> {
+        let hash = hash_from_string(restoral_fragment);
+
+        let tx = polkadot::tx().file_bank().claim_restoral_order(hash);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(claim_restoral_order) = events.find_first::<ClaimRestoralOrder>()? {
+            info!("Claim restoral order: {:?}", claim_restoral_order);
+            return Ok(tx_hash);
+        } else {
+            bail!("Unable to claim restoral order");
+        }
     }
 
-    pub async fn generate_restoral_order(&self) -> Result<()> {
-        Ok(())
-    }
-    pub async fn claim_restoral_order(&self) -> Result<()> {
-        Ok(())
-    }
-    pub async fn claim_restoral_no_exist_order(&self) -> Result<()> {
-        Ok(())
+    pub async fn claim_restoral_no_exist_order(
+        &self,
+        miner: &[u8],
+        file_hash: &str,
+        restoral_fragment: &str,
+    ) -> Result<String> {
+        let account = account_from_slice(miner);
+        let file_hash = hash_from_string(file_hash);
+        let restoral_fragment_hash = hash_from_string(restoral_fragment);
+
+        let tx = polkadot::tx().file_bank().claim_restoral_noexist_order(
+            account,
+            file_hash,
+            restoral_fragment_hash,
+        );
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
     }
 
-    pub async fn restoral_complete(&self) -> Result<()> {
-        Ok(())
+    pub async fn restoral_order_complete(&self, fragment_hash: &str) -> Result<String> {
+        let hash = hash_from_string(fragment_hash);
+
+        let tx = polkadot::tx()
+            .file_bank()
+            .restoral_order_complete(hash);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
     }
 
-    pub async fn replace_idle_space(&self) -> Result<()> {
-        Ok(())
+    pub async fn miner_exit_prep(&self) -> Result<String> {
+        let tx = polkadot::tx()
+            .file_bank()
+            .miner_exit_prep();
+
+        let from = PairSigner::new(self.pair.clone());
+        
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(exit_prep) = events.find_first::<MinerExitPrep>()? {
+            info!("Miner exit prep: {:?}", exit_prep);
+            return Ok(tx_hash);
+        } else {
+            bail!("Unable to execute miner exit prep");
+        }
+    }
+
+    pub async fn miner_exit(&self, miner: &[u8]) -> Result<String> {
+        let account = account_from_slice(miner);
+
+        let tx = polkadot::tx()
+            .file_bank()
+            .miner_exit(account);
+
+        let from = PairSigner::new(self.pair.clone());
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
+    }
+
+    pub async fn miner_withdraw(&self) -> Result<String> {
+        let tx = polkadot::tx()
+            .file_bank()
+            .miner_withdraw();
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
     }
 }
 

@@ -1,14 +1,17 @@
 use anyhow::{anyhow, bail, Result};
+
 use subxt::{
     blocks::ExtrinsicEvents,
     config::ExtrinsicParams,
+    runtime_api::RuntimeApiPayload,
     storage::{address::Yes, StorageAddress},
     tx::{Signer as SignerT, TxPayload},
-    utils::AccountId32,
+    utils::{AccountId32, H256},
     Config, PolkadotConfig,
 };
 
-use crate::init_api;
+use crate::{init_api, polkadot};
+use polkadot::runtime_types::cp_cess_common::Hash;
 
 pub fn hex_string_to_bytes(hex: &str) -> [u8; 64] {
     let hex_without_prefix = if hex.starts_with("0x") {
@@ -57,7 +60,44 @@ where
     result
 }
 
-pub(crate) async fn sign_and_submit_tx<Call, Signer, T>(
+pub(crate) async fn runtime_api_call<Call: RuntimeApiPayload>(
+    payload: Call,
+) -> Result<Call::ReturnType> {
+    let api = match init_api().await {
+        Ok(api) => api,
+        Err(e) => bail!("Failed to initialize API: {}", e),
+    };
+
+    match api.runtime_api().at_latest().await?.call(payload).await {
+        Ok(result) => Ok(result),
+        Err(err) => {
+            bail!("Error: {}", err)
+        }
+    }
+}
+
+pub(crate) async fn sign_and_sbmit_tx_default<Call, Signer, T>(
+    tx: &Call,
+    from: &Signer,
+) -> Result<H256>
+where
+    Call: TxPayload,
+    Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig>,
+    T: Config,
+    <T::ExtrinsicParams as ExtrinsicParams<T::Index, T::Hash>>::OtherParams: Default,
+{
+    let api = match init_api().await {
+        Ok(api) => api,
+        Err(e) => bail!("Failed to initialize API: {}", e),
+    };
+
+    match api.tx().sign_and_submit_default(tx, from).await {
+        Ok(hash) => Ok(hash),
+        Err(err) => bail!("Error submitting transaction: {}", err),
+    }
+}
+
+pub(crate) async fn sign_and_submit_tx_then_watch_default<Call, Signer, T>(
     tx: &Call,
     from: &Signer,
 ) -> Result<ExtrinsicEvents<PolkadotConfig>>
@@ -91,4 +131,9 @@ pub(crate) fn account_from_slice(pk: &[u8]) -> AccountId32 {
     pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
 
     AccountId32::from(pk_array)
+}
+
+pub(crate) fn hash_from_string(hash_str: &str) -> Hash {
+    let hash_bytes = hex_string_to_bytes(hash_str);
+    Hash(hash_bytes)
 }

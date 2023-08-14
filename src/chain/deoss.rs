@@ -86,7 +86,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn register(&self, endpoint: [u8; 38]) -> Result<String> {
+    pub async fn register_deoss(&self, endpoint: [u8; 38]) -> Result<String> {
         let tx = oss_tx().register(endpoint);
 
         let from = PairSigner::new(self.pair.clone());

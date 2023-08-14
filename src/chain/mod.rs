@@ -2,7 +2,6 @@ pub mod audit;
 pub mod deoss;
 pub mod file_bank;
 pub mod sminer;
-pub mod staking;
 
 use sp_keyring::sr25519::sr25519::Pair;
 use subxt::ext::sp_core::Pair as sp_core_pair;

@@ -12,7 +12,7 @@ use polkadot::{
     },
     storage_handler::{
         calls::TransactionApi, 
-        // events::IncreaseCollateral, 
+        events::{BuySpace, ExpansionSpace, RenewalSpace}, 
         storage::StorageApi
     },
 };
@@ -85,5 +85,61 @@ impl Sdk {
             Ok(value) => Ok(value),
             Err(e) => Err(e),
         }
+    }
+
+    /* Transactional functions */
+
+    pub async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)> {
+
+        let tx = storage_handler_tx().buy_space(gib_count);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(space) = events.find_first::<BuySpace>()? {
+            return Ok((tx_hash, space));
+        } else {
+            bail!("Unable to buy space");
+        }
+    }
+
+    pub async fn expansion_space(&self, gib_count: u32) -> Result<(String, ExpansionSpace)> {
+        let tx = storage_handler_tx().expansion_space(gib_count);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(space) = events.find_first::<ExpansionSpace>()? {
+            return Ok((tx_hash, space));
+        } else {
+            bail!("Unable to expand space");
+        }
+    }
+
+    pub async fn renewal_space(&self, days: u32) -> Result<(String, RenewalSpace)> {
+        let tx = storage_handler_tx().renewal_space(days);
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(space) = events.find_first::<RenewalSpace>()? {
+            return Ok((tx_hash, space));
+        } else {
+            bail!("Unable to renew space");
+        }
+    }
+    
+    pub async fn update_price(&self) -> Result<String> {
+        let tx = storage_handler_tx().update_price();
+        let from = PairSigner::new(self.pair.clone());
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
     }
 }

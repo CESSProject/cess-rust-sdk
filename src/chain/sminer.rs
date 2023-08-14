@@ -110,6 +110,7 @@ impl Sdk {
     }
 
     /* Transactional functions */
+    // regnstk
     pub async fn regnstk(
         &self,
         beneficiary: &[u8],
@@ -128,6 +129,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
+    // increase_collateral
     pub async fn increase_collateral(
         &self,
         collaterals: u128,
@@ -146,6 +148,7 @@ impl Sdk {
         }
     }
 
+    // update_beneficiary
     pub async fn update_beneficiary(&self, beneficiary: &[u8]) -> Result<String> {
         let account = account_from_slice(beneficiary);
 
@@ -156,6 +159,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
+    // update_peer_id
     pub async fn update_peer_id(&self, peer_id: [u8; 38]) -> Result<String> {
         let tx = sminer_tx().update_peer_id(peer_id);
         let from = PairSigner::new(self.pair.clone());
@@ -164,6 +168,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
+    // receive_reward
     pub async fn receive_reward(&self) -> Result<String> {
         let tx = sminer_tx().receive_reward();
         let from = PairSigner::new(self.pair.clone());

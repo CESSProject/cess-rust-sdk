@@ -89,8 +89,8 @@ impl Sdk {
         }
     }
 
-    // query_challenge_snap_shot
-    pub async fn query_challenge_snap_shot(&self) -> Result<ChallengeInfo> {
+    // query_challenge_snapshot
+    pub async fn query_challenge_snapshot(&self) -> Result<ChallengeInfo> {
         let query = audit_storage().challenge_snap_shot();
 
         let result = query_storage(&query).await;

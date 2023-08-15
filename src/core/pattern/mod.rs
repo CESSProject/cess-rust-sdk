@@ -434,14 +434,12 @@ pub const BLOCK_NUMBER: u32 = 1024;
 pub const DATA_SHARDS: u32 = 2;
 pub const PAR_SHARDS: u32 = 1;
 
-pub struct ChallengeSnapshot {
-    pub net_snapshot: NetSnapshot,
-    pub miner_snapshot: Vec<MinerSnapshot>,
+#[derive(Default)]
+pub struct ChallengeInfo {
+    pub random: Vec<Vec<u8>>,
+    pub random_index_list: Vec<u32>,
+    pub start: u32,
 }
-
-pub struct NetSnapshot {}
-
-pub struct MinerSnapshot {}
 
 #[cfg(test)]
 mod test {

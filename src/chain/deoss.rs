@@ -71,7 +71,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(authorize) = events.find_first::<Authorize>()? {
-            return Ok((tx_hash, authorize));
+            Ok((tx_hash, authorize))
         } else {
             bail!("Unable to authorize");
         }

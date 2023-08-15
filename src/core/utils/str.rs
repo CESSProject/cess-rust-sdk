@@ -5,7 +5,7 @@ use rand::SeedableRng;
 use std::time::SystemTime;
 
 const LETTER_ID_BITS: i32 = 6;
-const LETTER_ID_MASK: i32 = 1 << LETTER_ID_BITS - 1;
+const LETTER_ID_MASK: i32 = 1 << (LETTER_ID_BITS - 1);
 const LETTER_ID_MAX: i32 = 63 / LETTER_ID_BITS;
 const BASE_STR: &str =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()[]{}+-*/_=.";

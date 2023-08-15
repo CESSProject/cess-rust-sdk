@@ -223,7 +223,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(upload_declaration) = events.find_first::<UploadDeclaration>()? {
-            return Ok(tx_hash);
+            Ok(tx_hash)
         } else {
             bail!("Unable to upload declaration");
         }
@@ -275,7 +275,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(transfer_report) = events.find_first::<TransferReport>()? {
-            return Ok((tx_hash, transfer_report.acc));
+            Ok((tx_hash, transfer_report.acc))
         } else {
             bail!("Unable to transfer");
         }
@@ -292,7 +292,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(calculate_end) = events.find_first::<CalculateEnd>()? {
-            return Ok((tx_hash, calculate_end.file_hash));
+            Ok((tx_hash, calculate_end.file_hash))
         } else {
             bail!("Unable to transfer");
         }
@@ -333,7 +333,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(delete_file) = events.find_first::<DeleteFile>()? {
-            return Ok((tx_hash, delete_file.file_hash_list));
+            Ok((tx_hash, delete_file.file_hash_list))
         } else {
             bail!("Unable to delete file");
         }
@@ -367,7 +367,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(create_bucket_event) = events.find_first::<CreateBucket>()? {
-            return Ok(tx_hash);
+            Ok(tx_hash)
         } else {
             bail!("Unable to create bucket");
         }
@@ -387,7 +387,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(delete_bucket_event) = events.find_first::<DeleteBucket>()? {
-            return Ok(tx_hash);
+            Ok(tx_hash)
         } else {
             bail!("Unable to delete bucket");
         }
@@ -409,7 +409,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(generate_restoral_order) = events.find_first::<GenerateRestoralOrder>()? {
-            return Ok(tx_hash);
+            Ok(tx_hash)
         } else {
             bail!("Unable to claim restoral order");
         }
@@ -426,7 +426,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(claim_restoral_order) = events.find_first::<ClaimRestoralOrder>()? {
-            return Ok(tx_hash);
+            Ok(tx_hash)
         } else {
             bail!("Unable to claim restoral order");
         }
@@ -473,7 +473,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(exit_prep) = events.find_first::<MinerExitPrep>()? {
-            return Ok(tx_hash);
+            Ok(tx_hash)
         } else {
             bail!("Unable to execute miner exit prep");
         }

@@ -366,6 +366,7 @@ dependencies = [
  "libp2p-core",
  "log",
  "md5",
+ "merkle_light",
  "parity-scale-codec",
  "phf",
  "rand 0.8.5",
@@ -1775,6 +1776,12 @@ checksum = "808b50db46293432a45e63bc15ea51e0ab4c0a1647b8eb114e31a3e698dd6fbe"
 dependencies = [
  "hash-db",
 ]
+
+[[package]]
+name = "merkle_light"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b879f617ec392ad9c11a50356ca373009c52363c0953b34c2e1b2234037a26a9"
 
 [[package]]
 name = "merlin"

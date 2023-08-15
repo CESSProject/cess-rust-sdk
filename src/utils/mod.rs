@@ -42,7 +42,7 @@ where
         Err(e) => bail!("Failed to initialize API: {}", e),
     };
 
-    let result = match api.storage().at_latest().await {
+    match api.storage().at_latest().await {
         Ok(mid_result) => match mid_result.fetch(query).await {
             Ok(Some(result)) => Ok(result),
             Ok(None) => {
@@ -55,9 +55,7 @@ where
         Err(e) => {
             bail!("Failed to fetch data from storage: {}", e);
         }
-    };
-
-    result
+    }
 }
 
 pub(crate) async fn runtime_api_call<Call: RuntimeApiPayload>(

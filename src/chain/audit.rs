@@ -246,7 +246,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(idle_proof) = events.find_first::<SubmitIdleProof>()? {
-            return Ok((tx_hash, idle_proof));
+            Ok((tx_hash, idle_proof))
         } else {
             bail!("Unable to submit idle proof");
         }
@@ -265,7 +265,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(service_proof) = events.find_first::<SubmitServiceProof>()? {
-            return Ok((tx_hash, service_proof));
+            Ok((tx_hash, service_proof))
         } else {
             bail!("Unable to submit service proof");
         }

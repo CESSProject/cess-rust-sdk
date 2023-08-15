@@ -1,18 +1,18 @@
-
 // use crate::chain::audit;
-use crate::core::pattern::ChallengeInfo;
-use anyhow::Result;
-use crate::utils::account_from_slice;
 use super::Sdk;
+use crate::core::pattern::ChallengeInfo;
+use crate::utils::account_from_slice;
+use anyhow::Result;
 
-impl Sdk{
-    pub async fn query_challenge(&self, pk: &[u8]) -> Result<ChallengeInfo>{
-
+impl Sdk {
+    pub async fn query_challenge(&self, pk: &[u8]) -> Result<ChallengeInfo> {
         let netinfo = self.query_challenge_snapshot().await?;
         let account = account_from_slice(pk);
-        
-        let mut chal = ChallengeInfo { ..Default::default() };
-        
+
+        let mut chal = ChallengeInfo {
+            ..Default::default()
+        };
+
         for v in &netinfo.miner_snapshot_list.0 {
             if v.miner == account {
                 for (k, value) in netinfo.net_snap_shot.random_list.0.iter().enumerate() {

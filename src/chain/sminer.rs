@@ -142,7 +142,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(collateral) = events.find_first::<IncreaseCollateral>()? {
-            return Ok((tx_hash, collateral));
+            Ok((tx_hash, collateral))
         } else {
             bail!("Unable to increase collateral");
         }

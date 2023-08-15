@@ -17,7 +17,7 @@ pub fn parsing_public_key(address: &str) -> Result<Vec<u8>> {
             if data.len() != 32 + SUBSTRATE_PREFIX.len() {
                 bail!("Public key decoding failed")
             }
-            return Ok(data[SUBSTRATE_PREFIX.len()..data.len() - 2].to_vec());
+            Ok(data[SUBSTRATE_PREFIX.len()..data.len() - 2].to_vec())
         }
         Ok(()) => {
             let data = bs58::decode(address)
@@ -27,7 +27,7 @@ pub fn parsing_public_key(address: &str) -> Result<Vec<u8>> {
             if data.len() != 34 + CESS_PREFIX.len() {
                 bail!("Public key decoding failed")
             }
-            return Ok(data[CESS_PREFIX.len()..data.len() - 2].to_vec());
+            Ok(data[CESS_PREFIX.len()..data.len() - 2].to_vec())
         }
     }
 }
@@ -79,7 +79,7 @@ pub fn verify_address(address: &str, prefix: &[u8]) -> Result<()> {
 
     let pub_key = &decode_bytes[prefix.len()..decode_bytes.len() - 2];
 
-    let data = append_bytes(prefix, &pub_key);
+    let data = append_bytes(prefix, pub_key);
     let input = append_bytes(&SS_PREFIX, &data);
     let mut hasher = Blake2b512::new();
     hasher.update(input);

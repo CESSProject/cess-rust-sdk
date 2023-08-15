@@ -9,13 +9,9 @@ use trust_dns_resolver::Resolver;
 pub fn is_valid_ip(ip_addr: &str) -> bool {
     match IpAddr::from_str(ip_addr) {
         Ok(ip_addr) => {
-            if ip_addr.is_ipv4() || ip_addr.is_ipv6() {
-                return true;
-            } else {
-                return false;
-            }
+            ip_addr.is_ipv4() || ip_addr.is_ipv6()
         }
-        Err(_) => return false,
+        Err(_) => false,
     }
 }
 

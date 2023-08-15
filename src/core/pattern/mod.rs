@@ -441,6 +441,13 @@ pub struct ChallengeInfo {
     pub start: u32,
 }
 
+#[derive(Default)]
+pub struct SegmentDataInfo {
+    pub segment_hash: String,
+    pub fragment_hash: Vec<String>,
+}
+
+
 #[cfg(test)]
 mod test {
     use super::{ChainState, Extrinsics, Pallets, RPC};

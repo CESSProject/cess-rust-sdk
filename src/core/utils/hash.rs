@@ -31,7 +31,7 @@ pub fn calc_file_sha256(f: &mut File) -> Result<String> {
 // calc_sha256 is used to calculate the sha256 value
 // of the data.
 pub fn calc_sha256(data: &[u8]) -> Result<String> {
-    if data.len() <= 0 {
+    if data.is_empty() {
         bail!("data is empty");
     }
     let mut hasher = Sha256::new();
@@ -45,7 +45,7 @@ pub fn calc_sha256(data: &[u8]) -> Result<String> {
 // calc_md5 is used to calculate the md5 value
 // of the data.
 pub fn calc_md5(data: &[u8]) -> Result<String> {
-    if data.len() <= 0 {
+    if data.is_empty() {
         bail!("data is empty");
     }
     let digest = md5::compute(data);

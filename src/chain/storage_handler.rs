@@ -7,13 +7,12 @@ use crate::utils::{
 use anyhow::{bail, Result};
 use polkadot::{
     runtime_types::{
-        pallet_storage_handler::types::{OwnedSpaceDetails},
-        sp_core::bounded::bounded_vec::BoundedVec,
+        pallet_storage_handler::types::OwnedSpaceDetails, sp_core::bounded::bounded_vec::BoundedVec,
     },
     storage_handler::{
-        calls::TransactionApi, 
-        events::{BuySpace, ExpansionSpace, RenewalSpace}, 
-        storage::StorageApi
+        calls::TransactionApi,
+        events::{BuySpace, ExpansionSpace, RenewalSpace},
+        storage::StorageApi,
     },
 };
 use subxt::tx::PairSigner;
@@ -39,7 +38,6 @@ impl Sdk {
             Ok(value) => Ok(value),
             Err(e) => Err(e),
         }
-
     }
 
     // query_unit_price
@@ -73,7 +71,6 @@ impl Sdk {
             Ok(value) => Ok(value),
             Err(e) => Err(e),
         }
-
     }
 
     // query_purchased_space
@@ -90,7 +87,6 @@ impl Sdk {
     /* Transactional functions */
 
     pub async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)> {
-
         let tx = storage_handler_tx().buy_space(gib_count);
 
         let from = PairSigner::new(self.pair.clone());
@@ -99,7 +95,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(space) = events.find_first::<BuySpace>()? {
-            return Ok((tx_hash, space));
+            Ok((tx_hash, space))
         } else {
             bail!("Unable to buy space");
         }
@@ -114,7 +110,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(space) = events.find_first::<ExpansionSpace>()? {
-            return Ok((tx_hash, space));
+            Ok((tx_hash, space))
         } else {
             bail!("Unable to expand space");
         }
@@ -129,12 +125,12 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(space) = events.find_first::<RenewalSpace>()? {
-            return Ok((tx_hash, space));
+            Ok((tx_hash, space))
         } else {
             bail!("Unable to renew space");
         }
     }
-    
+
     pub async fn update_price(&self) -> Result<String> {
         let tx = storage_handler_tx().update_price();
         let from = PairSigner::new(self.pair.clone());

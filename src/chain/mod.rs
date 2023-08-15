@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod deoss;
+pub mod file;
 pub mod file_bank;
 pub mod sminer;
 pub mod snapshot;

@@ -103,8 +103,6 @@ fn read_solomon_restore(out_path: &str, shards_path: Vec<String>) -> Result<()> 
 
     if !result.is_empty() {
         let mut f = fs::File::create(out_path)?;
-        // f.write_all(&result)?;
-
         f.write_all(&result.iter().flat_map(|x| x.iter()).cloned().collect::<Vec<_>>())?;
     }
     Ok(())

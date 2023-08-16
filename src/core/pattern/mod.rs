@@ -1,6 +1,6 @@
 use std::{
     fmt::{Display, Formatter, Result},
-    time::Duration,
+    time::Duration, path::PathBuf,
 };
 
 // DOT is "." character
@@ -443,8 +443,8 @@ pub struct ChallengeInfo {
 
 #[derive(Default)]
 pub struct SegmentDataInfo {
-    pub segment_hash: String,
-    pub fragment_hash: Vec<String>,
+    pub segment_hash: PathBuf,
+    pub fragment_hash: Vec<PathBuf>,
 }
 
 

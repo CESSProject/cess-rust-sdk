@@ -1,26 +1,51 @@
+use crate::core::erasure::reed_solomon;
 use crate::core::pattern::{SegmentDataInfo, SEGMENT_SIZE};
 use crate::core::utils;
 use crate::core::utils::hash::calc_sha256;
-
+use crate::core::hashtree::{build_tree, build_simple_merkle_root_hash, build_merkle_root_hash};
 use super::Sdk;
-use std::fs::File;
+use std::fs::{File, self};
 use std::io::{Read, Write, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Result};
 use sha2::{Sha256, Digest};
 
 impl Sdk {
-    pub async fn processing_data(file: &str) -> Result<(SegmentDataInfo, String)> {
-        let segment_path = match cut_file(file) {
-            Ok(segment_path) => segment_path,
+    pub async fn processing_data(file: &str) -> Result<(Vec<SegmentDataInfo>, String)> {
+        let segment_paths = match cut_file(file) {
+            Ok(segment_paths) => segment_paths,
             Err(err) => {
                 bail!("[cutfile]: {}", err)
             }
         };
 
-        // Todo: Reed Solomon algo
+        let mut segment_data_info = Vec::new();
+       
+        for v in &segment_paths {
+            let segment_hash = v.clone();
+            let fragment_hash = match reed_solomon(v.to_str().unwrap()) {
+                Ok(fragment_hash) => fragment_hash,
+                Err(err) => {
+                    bail!("[ReedSolomon]: {}", err)
+                }
+            };
+
+            segment_data_info.push(SegmentDataInfo{
+                segment_hash,
+                fragment_hash
+            });
+
+            fs::remove_file(v)?;
+        }
+
+        let hash = if segment_paths.len() == 1 {
+            build_simple_merkle_root_hash(&Path::new(&segment_paths[0]).file_name().unwrap().to_string_lossy())?
+        } else {
+            build_merkle_root_hash(&segment_paths)?
+        };
         
-        Ok((SegmentDataInfo { ..Default::default() }, "".to_string()))
+
+        Ok((segment_data_info, hash))
     }
 }
 

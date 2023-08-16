@@ -1,5 +1,6 @@
 use crate::core::pattern::{SegmentDataInfo, SEGMENT_SIZE};
 use crate::core::utils;
+use crate::core::utils::hash::calc_sha256;
 
 use super::Sdk;
 use std::fs::File;
@@ -10,6 +11,14 @@ use sha2::{Sha256, Digest};
 
 impl Sdk {
     pub async fn processing_data(file: &str) -> Result<(SegmentDataInfo, String)> {
+        let segment_path = match cut_file(file) {
+            Ok(segment_path) => segment_path,
+            Err(err) => {
+                bail!("[cutfile]: {}", err)
+            }
+        };
+
+        // Todo: Reed Solomon algo
         
         Ok((SegmentDataInfo { ..Default::default() }, "".to_string()))
     }
@@ -46,8 +55,8 @@ fn cut_file(file: &str) -> Result<Vec<PathBuf>> {
             buf[num..].copy_from_slice(rand_str.as_bytes());
         }
 
-        let hash = sha256_hash(&buf);
-        let segment_path = base_dir.join(format!("{}", hex::encode(&hash)));
+        let hash = calc_sha256(&buf)?;
+        let segment_path = base_dir.join(hash);
         let mut segment_file = File::create(&segment_path)?;
         segment_file.write_all(&buf)?;
 
@@ -55,11 +64,4 @@ fn cut_file(file: &str) -> Result<Vec<PathBuf>> {
     }
 
     Ok(segments)
-}
-
-fn sha256_hash(data: &[u8]) -> [u8; 32] {
-    let mut hasher = Sha256::new();
-    hasher.update(data);
-    let result = hasher.finalize();
-    result.into()
 }

@@ -170,7 +170,7 @@ impl Sdk {
         deal_info: BoundedVec<SegmentList>,
         user: UserBrief,
         file_size: u128,
-    ) -> Result<String> {
+    ) -> Result<(String, UploadDeclaration)> {
         let hash = hash_from_string(file_hash);
 
         let tx = file_bank_tx().upload_declaration(hash, deal_info, user, file_size);
@@ -181,7 +181,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(upload_declaration) = events.find_first::<UploadDeclaration>()? {
-            Ok(tx_hash)
+            Ok((tx_hash, upload_declaration))
         } else {
             bail!("Unable to upload declaration");
         }
@@ -312,11 +312,7 @@ impl Sdk {
     }
 
     // create_bucket
-    pub async fn create_bucket(
-        &self,
-        pk: &[u8],
-        name: &str,
-    ) -> Result<(String, create_bucket_event)> {
+    pub async fn create_bucket(&self, pk: &[u8], name: &str) -> Result<(String, CreateBucket)> {
         let account = account_from_slice(pk);
 
         let name_bytes: BoundedVec<u8> = BoundedVec(name.as_bytes().to_vec());
@@ -455,15 +451,16 @@ mod test {
     use crate::chain::Sdk;
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+
+    const PUB_KEY: &str = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
+
     #[tokio::test]
-    async fn test_query_bucket_info() {
+    async fn test_query_storage_order() {
         let sdk = Sdk::new(MNEMONIC, "service_name");
-        let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
-        let pk_bytes = hex::decode(pk).unwrap();
-        let name = "MyFirstBucket";
-        let result = sdk.query_bucket_info(&pk_bytes, name).await;
+        let root_hash = "";
+        let result = sdk.query_storage_order(root_hash).await;
         match result {
-            Ok(v) => {
+            Ok(_) => {
                 assert!(true);
             }
             Err(_) => {
@@ -473,11 +470,57 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_query_all_bucket_name() {
+    async fn test_query_file_metadata() {
         let sdk = Sdk::new(MNEMONIC, "service_name");
-        let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
-        let pk_bytes = hex::decode(pk).unwrap();
-        let result = sdk.query_all_bucket_name(&pk_bytes).await;
+        let root_hash = "";
+        let result = sdk.query_file_metadata(root_hash).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_query_user_hold_file_list() {
+        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let result = sdk.query_user_hold_file_list(&pk_bytes).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_query_pending_replacements() {
+        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let result = sdk.query_pending_replacements(&pk_bytes).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_query_bucket_info() {
+        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let pk = PUB_KEY;
+        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let name = "MyFirstBucket";
+        let result = sdk.query_bucket_info(&pk_bytes, name).await;
         match result {
             Ok(_) => {
                 assert!(true);
@@ -491,11 +534,54 @@ mod test {
     #[tokio::test]
     async fn test_query_user_bucket_list() {
         let sdk = Sdk::new(MNEMONIC, "service_name");
-        let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
-        let pk_bytes = hex::decode(pk).unwrap();
+        let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let result = sdk.query_user_bucket_list(&pk_bytes).await;
         match result {
-            Ok(v) => {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_query_all_bucket_name() {
+        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let result = sdk.query_all_bucket_name(&pk_bytes).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_query_restoral_order() {
+        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let root_hash = "";
+        let result = sdk.query_restoral_order(root_hash).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_query_clear_user_list() {
+        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let result = sdk.query_clear_user_list().await;
+        match result {
+            Ok(_) => {
                 assert!(true);
             }
             Err(_) => {
@@ -507,8 +593,7 @@ mod test {
     #[tokio::test]
     async fn test_create_bucket() {
         let sdk = Sdk::new(MNEMONIC, "service_name");
-        let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
-        let pk_bytes = hex::decode(pk).unwrap();
+        let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let name = "MyFirstBucket";
         let result = sdk.create_bucket(&pk_bytes, name).await;
         match result {
@@ -525,8 +610,7 @@ mod test {
     #[tokio::test]
     async fn test_delete_bucket() {
         let sdk = Sdk::new(MNEMONIC, "service_name");
-        let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
-        let pk_bytes = hex::decode(pk).unwrap();
+        let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let name = "MyFirstBucket";
         let result = sdk.delete_bucket(&pk_bytes, name).await;
         match result {

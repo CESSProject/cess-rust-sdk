@@ -12,10 +12,13 @@ use std::fs::{self, File};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
-use polkadot::runtime_types::{
-    cp_cess_common::Hash,
-    pallet_file_bank::types::{SegmentList, UserBrief},
-    sp_core::bounded::bounded_vec::BoundedVec,
+use polkadot::{
+    file_bank::events::UploadDeclaration,
+    runtime_types::{
+        cp_cess_common::Hash,
+        pallet_file_bank::types::{SegmentList, UserBrief},
+        sp_core::bounded::bounded_vec::BoundedVec,
+    },
 };
 
 impl Sdk {
@@ -60,52 +63,59 @@ impl Sdk {
         Ok((segment_data_info, hash))
     }
 
-    // pub async fn generate_storage_order(&self, root_hash: &str, segment: Vec<SegmentDataInfo>, owner: &[u8], file_name: &str, buck_name: &str, file_size:u64) -> Result<String> {
-    //     let segment_list = Vec::new();
+    pub async fn generate_storage_order(
+        &self,
+        root_hash: &str,
+        segment: Vec<SegmentDataInfo>,
+        owner: &[u8],
+        file_name: &str,
+        buck_name: &str,
+        file_size: u64,
+    ) -> Result<(String, UploadDeclaration)> {
+        let mut segment_list = Vec::new();
+        for seg_info in &segment {
+            let mut segment_hash = [0u8; 64];
+            let mut fragment_hashes = Vec::new();
+            for (i, &byte) in PathBuf::from(&seg_info.segment_hash)
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .as_bytes()
+                .iter()
+                .enumerate()
+            {
+                segment_hash[i] = byte;
+            }
 
-    //     for seg_info in &segment{
-    //         let mut segment_hash = Hash::default();
-    //         let mut fragment_hashes = BoundedVec::new();
+            for frag_hash in &seg_info.fragment_hash {
+                let mut fragment_hash = [0u8; 64];
+                for (i, &byte) in PathBuf::from(frag_hash)
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .as_bytes()
+                    .iter()
+                    .enumerate()
+                {
+                    fragment_hash[i] = byte;
+                }
+                fragment_hashes.push(Hash(fragment_hash.clone()));
+            }
 
-    //         for (i, &byte) in PathBuf::from(&seg_info.segment_hash)
-    //             .file_name()
-    //             .unwrap()
-    //             .to_string_lossy()
-    //             .as_bytes()
-    //             .iter()
-    //             .enumerate()
-    //         {
-    //             segment_hash[i] = byte;
-    //         }
-
-    //         for frag_hash in &seg_info.fragment_hash {
-    //             let mut fragment_hash = [0u8; 32];
-    //             for (i, &byte) in PathBuf::from(frag_hash)
-    //                 .file_name()
-    //                 .unwrap()
-    //                 .to_string_lossy()
-    //                 .as_bytes()
-    //                 .iter()
-    //                 .enumerate()
-    //             {
-    //                 fragment_hash[i] = byte;
-    //             }
-    //             fragment_hashes.push(fragment_hash);
-    //         }
-
-    //         segment_list.push(SegmentList {
-    //             hash: BoundedVec::new(segment_hash),
-    //             fragment_list:fragment_hashes,
-    //         });
-    //     }
-    //     let acc = account_from_slice(owner);
-    //     let user = UserBrief {
-    //         user: acc,
-    //         file_name: BoundedVec::new(file_name.bytes()),
-    //         bucket_name: BoundedVec::new(buck_name.bytes())
-    //     };
-    //     Ok("".to_string())
-    // }
+            segment_list.push(SegmentList {
+                hash: Hash(segment_hash),
+                fragment_list: BoundedVec(fragment_hashes),
+            });
+        }
+        let acc = account_from_slice(owner);
+        let user = UserBrief {
+            user: acc,
+            file_name: BoundedVec(file_name.as_bytes().to_vec()),
+            bucket_name: BoundedVec(buck_name.as_bytes().to_vec()),
+        };
+        self.upload_declaration(root_hash, BoundedVec(segment_list), user, file_size.into())
+            .await
+    }
 }
 
 fn cut_file(file: &str) -> Result<Vec<PathBuf>> {

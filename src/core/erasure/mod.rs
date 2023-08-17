@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 
 use super::pattern::{DATA_SHARDS, PAR_SHARDS, SEGMENT_SIZE};
 use super::utils::hash::calc_sha256;
-use reed_solomon_erasure::galois_8::{ReedSolomon, self};
-use reed_solomon_erasure::{ReconstructShard, Field, convert_2D_slices, Error};
+use reed_solomon_erasure::galois_8::{self, ReedSolomon};
+use reed_solomon_erasure::{convert_2D_slices, Error, Field, ReconstructShard};
 use smallvec::SmallVec;
 
 pub fn reed_solomon(path: &str) -> Result<Vec<PathBuf>> {
@@ -30,7 +30,7 @@ pub fn reed_solomon(path: &str) -> Result<Vec<PathBuf>> {
     };
 
     let b = match fs::read(path) {
-        Ok(b) => b, 
+        Ok(b) => b,
         Err(err) => {
             bail!("{}", err)
         }
@@ -76,7 +76,7 @@ fn split_data_into_shards(data: &[u8], shard_size: usize) -> Vec<Vec<u8>> {
 
 fn read_solomon_restore(out_path: &str, shards_path: Vec<String>) -> Result<()> {
     if Path::new(out_path).exists() {
-        return Ok(())
+        return Ok(());
     }
 
     let enc = match ReedSolomon::new(DATA_SHARDS as usize, PAR_SHARDS as usize) {
@@ -103,7 +103,13 @@ fn read_solomon_restore(out_path: &str, shards_path: Vec<String>) -> Result<()> 
 
     if !result.is_empty() {
         let mut f = fs::File::create(out_path)?;
-        f.write_all(&result.iter().flat_map(|x| x.iter()).cloned().collect::<Vec<_>>())?;
+        f.write_all(
+            &result
+                .iter()
+                .flat_map(|x| x.iter())
+                .cloned()
+                .collect::<Vec<_>>(),
+        )?;
     }
     Ok(())
 }

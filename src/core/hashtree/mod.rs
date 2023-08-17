@@ -1,9 +1,9 @@
+use anyhow::{bail, Result};
 use merkle_light::hash::Algorithm;
 use merkle_light::merkle::MerkleTree;
 use merkle_light::proof::Proof;
 use sha2::{Digest, Sha256};
 use std::{hash::Hasher, path::PathBuf};
-use anyhow::{Result, bail};
 
 use super::utils::hash::calc_sha256;
 
@@ -61,7 +61,8 @@ pub fn build_merkle_root_hash(segment_paths: &[PathBuf]) -> Result<String> {
         bail!("empty segment paths");
     }
 
-    let segment_hash: Vec<_> = segment_paths.iter()
+    let segment_hash: Vec<_> = segment_paths
+        .iter()
         .map(|path| path.to_str().unwrap_or("").to_string())
         .collect();
 

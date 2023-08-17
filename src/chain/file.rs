@@ -1,14 +1,22 @@
-use crate::core::erasure::reed_solomon;
-use crate::core::pattern::{SegmentDataInfo, SEGMENT_SIZE};
-use crate::core::utils;
-use crate::core::utils::hash::calc_sha256;
-use crate::core::hashtree::{build_tree, build_simple_merkle_root_hash, build_merkle_root_hash};
 use super::Sdk;
-use std::fs::{File, self};
-use std::io::{Read, Write, Seek, SeekFrom};
-use std::path::{Path, PathBuf};
+use crate::core::erasure::reed_solomon;
+use crate::core::hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash, build_tree};
+use crate::core::pattern::{SegmentDataInfo, SEGMENT_SIZE};
+use crate::core::utils::hash::calc_sha256;
+use crate::core::utils::{self, file};
+use crate::polkadot;
+use crate::utils::account_from_slice;
 use anyhow::{anyhow, bail, Result};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
+use std::fs::{self, File};
+use std::io::{Read, Seek, SeekFrom, Write};
+use std::path::{Path, PathBuf};
+
+use polkadot::runtime_types::{
+    cp_cess_common::Hash,
+    pallet_file_bank::types::{SegmentList, UserBrief},
+    sp_core::bounded::bounded_vec::BoundedVec,
+};
 
 impl Sdk {
     pub async fn processing_data(file: &str) -> Result<(Vec<SegmentDataInfo>, String)> {
@@ -20,7 +28,7 @@ impl Sdk {
         };
 
         let mut segment_data_info = Vec::new();
-       
+
         for v in &segment_paths {
             let segment_hash = v.clone();
             let fragment_hash = match reed_solomon(v.to_str().unwrap()) {
@@ -30,23 +38,74 @@ impl Sdk {
                 }
             };
 
-            segment_data_info.push(SegmentDataInfo{
+            segment_data_info.push(SegmentDataInfo {
                 segment_hash,
-                fragment_hash
+                fragment_hash,
             });
 
             fs::remove_file(v)?;
         }
 
         let hash = if segment_paths.len() == 1 {
-            build_simple_merkle_root_hash(&Path::new(&segment_paths[0]).file_name().unwrap().to_string_lossy())?
+            build_simple_merkle_root_hash(
+                &Path::new(&segment_paths[0])
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy(),
+            )?
         } else {
             build_merkle_root_hash(&segment_paths)?
         };
-        
 
         Ok((segment_data_info, hash))
     }
+
+    // pub async fn generate_storage_order(&self, root_hash: &str, segment: Vec<SegmentDataInfo>, owner: &[u8], file_name: &str, buck_name: &str, file_size:u64) -> Result<String> {
+    //     let segment_list = Vec::new();
+
+    //     for seg_info in &segment{
+    //         let mut segment_hash = Hash::default();
+    //         let mut fragment_hashes = BoundedVec::new();
+
+    //         for (i, &byte) in PathBuf::from(&seg_info.segment_hash)
+    //             .file_name()
+    //             .unwrap()
+    //             .to_string_lossy()
+    //             .as_bytes()
+    //             .iter()
+    //             .enumerate()
+    //         {
+    //             segment_hash[i] = byte;
+    //         }
+
+    //         for frag_hash in &seg_info.fragment_hash {
+    //             let mut fragment_hash = [0u8; 32];
+    //             for (i, &byte) in PathBuf::from(frag_hash)
+    //                 .file_name()
+    //                 .unwrap()
+    //                 .to_string_lossy()
+    //                 .as_bytes()
+    //                 .iter()
+    //                 .enumerate()
+    //             {
+    //                 fragment_hash[i] = byte;
+    //             }
+    //             fragment_hashes.push(fragment_hash);
+    //         }
+
+    //         segment_list.push(SegmentList {
+    //             hash: BoundedVec::new(segment_hash),
+    //             fragment_list:fragment_hashes,
+    //         });
+    //     }
+    //     let acc = account_from_slice(owner);
+    //     let user = UserBrief {
+    //         user: acc,
+    //         file_name: BoundedVec::new(file_name.bytes()),
+    //         bucket_name: BoundedVec::new(buck_name.bytes())
+    //     };
+    //     Ok("".to_string())
+    // }
 }
 
 fn cut_file(file: &str) -> Result<Vec<PathBuf>> {
@@ -58,7 +117,9 @@ fn cut_file(file: &str) -> Result<Vec<PathBuf>> {
         bail!("empty file");
     }
 
-    let base_dir = Path::new(file).parent().ok_or_else(|| anyhow!("Invalid parent directory"))?;
+    let base_dir = Path::new(file)
+        .parent()
+        .ok_or_else(|| anyhow!("Invalid parent directory"))?;
     let segment_count = (fstat.len() + SEGMENT_SIZE as u64 - 1) / SEGMENT_SIZE as u64;
 
     let mut segments = Vec::with_capacity(segment_count as usize);

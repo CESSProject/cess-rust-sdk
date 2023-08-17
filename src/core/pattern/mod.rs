@@ -1,6 +1,7 @@
 use std::{
     fmt::{Display, Formatter, Result},
-    time::Duration, path::PathBuf,
+    path::PathBuf,
+    time::Duration,
 };
 
 // DOT is "." character
@@ -446,7 +447,6 @@ pub struct SegmentDataInfo {
     pub segment_hash: PathBuf,
     pub fragment_hash: Vec<PathBuf>,
 }
-
 
 #[cfg(test)]
 mod test {

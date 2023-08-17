@@ -32,7 +32,7 @@ impl Sdk {
     /* Query functions */
 
     // query_authority_list
-    pub async fn query_authority_list(&self, pk: &[u8]) -> Result<AccountId32> {
+    pub async fn query_authority_list(&self, pk: &[u8]) -> Result<BoundedVec<AccountId32>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().authority_list(&account);
@@ -77,8 +77,9 @@ impl Sdk {
         }
     }
 
-    pub async fn cancel_authorize(&self) -> Result<String> {
-        let tx = oss_tx().cancel_authorize();
+    pub async fn cancel_authorize(&self, pk: &[u8]) -> Result<String> {
+        let account = account_from_slice(pk);
+        let tx = oss_tx().cancel_authorize(account);
 
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;

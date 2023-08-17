@@ -8,10 +8,14 @@ use anyhow::{bail, Result};
 use polkadot::{
     runtime_types::{
         cp_cess_common::PoISKey,
-        pallet_sminer::types::{MinerInfo, Reward},
+        pallet_sminer::types::{MinerInfo, RestoralTargetInfo, Reward},
         sp_core::bounded::bounded_vec::BoundedVec,
     },
-    sminer::{calls::TransactionApi, events::IncreaseCollateral, storage::StorageApi},
+    sminer::{
+        calls::TransactionApi,
+        events::{IncreaseCollateral, MinerExitPrep},
+        storage::StorageApi,
+    },
 };
 use subxt::tx::PairSigner;
 use subxt::utils::AccountId32;
@@ -109,6 +113,35 @@ impl Sdk {
         }
     }
 
+    // query_miner_lock
+    pub async fn query_miner_lock(&self, pk: &[u8]) -> Result<u32> {
+        let account = account_from_slice(pk);
+
+        let query = sminer_storage().miner_lock(&account);
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
+        }
+    }
+
+    // query_restoral_target
+    pub async fn query_restoral_target(
+        &self,
+        pk: &[u8],
+    ) -> Result<RestoralTargetInfo<AccountId32, u32>> {
+        let account = account_from_slice(pk);
+
+        let query = sminer_storage().restoral_target(&account);
+
+        let result = query_storage(&query).await;
+        match result {
+            Ok(value) => Ok(value),
+            Err(e) => Err(e),
+        }
+    }
+
     /* Transactional functions */
     // regnstk
     pub async fn regnstk(
@@ -172,6 +205,52 @@ impl Sdk {
     pub async fn receive_reward(&self) -> Result<String> {
         let tx = sminer_tx().receive_reward();
         let from = PairSigner::new(self.pair.clone());
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
+    }
+
+    pub async fn miner_exit_prep(&self) -> Result<(String, MinerExitPrep)> {
+        let tx = sminer_tx().miner_exit_prep();
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let tx_hash = events.extrinsic_hash().to_string();
+        if let Some(exit_prep) = events.find_first::<MinerExitPrep>()? {
+            Ok((tx_hash, exit_prep))
+        } else {
+            bail!("Unable to execute miner exit prep");
+        }
+    }
+
+    pub async fn miner_exit(&self, miner: &[u8]) -> Result<String> {
+        let account = account_from_slice(miner);
+
+        let tx = sminer_tx().miner_exit(account);
+
+        let from = PairSigner::new(self.pair.clone());
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
+    }
+
+    pub async fn miner_withdraw(&self) -> Result<String> {
+        let tx = sminer_tx().miner_withdraw();
+
+        let from = PairSigner::new(self.pair.clone());
+
+        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+
+        Ok(hash.to_string())
+    }
+
+    pub async fn update_expender(&self, k: u64, n: u64, d: u64) -> Result<String> {
+        let tx = sminer_tx().update_expender(k, n, d);
+
+        let from = PairSigner::new(self.pair.clone());
+
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
 
         Ok(hash.to_string())

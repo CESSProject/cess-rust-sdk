@@ -274,12 +274,24 @@ impl Sdk {
     // submit_verify_idle_result
     pub async fn submit_verify_idle_result(
         &self,
-        miner: &[u8],
+        total_prove_hash: BoundedVec<u8>,
+        front: u64,
+        rear: u64,
+        accumulator: &[u8; 256],
         idle_result: bool,
         signature: &[u8; 256],
+        tee_acc: &[u8],
     ) -> Result<String> {
-        let account = account_from_slice(miner);
-        let tx = audit_tx().submit_verify_idle_result(account, idle_result, *signature);
+        let account = account_from_slice(tee_acc);
+        let tx = audit_tx().submit_verify_idle_result(
+            total_prove_hash,
+            front,
+            rear,
+            *accumulator,
+            idle_result,
+            *signature,
+            account,
+        );
 
         let from = PairSigner::new(self.pair.clone());
 
@@ -291,17 +303,17 @@ impl Sdk {
     // submit_verify_service_result
     pub async fn submit_verify_service_result(
         &self,
-        miner: &[u8],
         service_result: bool,
         signature: &[u8; 256],
         service_bloom_filter: BloomFilter,
+        miner: &[u8],
     ) -> Result<String> {
         let account = account_from_slice(miner);
         let tx = audit_tx().submit_verify_service_result(
-            account,
             service_result,
             *signature,
             service_bloom_filter,
+            account,
         );
 
         let from = PairSigner::new(self.pair.clone());

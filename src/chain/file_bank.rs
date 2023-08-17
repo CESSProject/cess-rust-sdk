@@ -13,15 +13,15 @@ use polkadot::{
         },
         events::{
             CalculateEnd, ClaimRestoralOrder, CreateBucket, DeleteBucket, DeleteFile,
-            GenerateRestoralOrder, MinerExitPrep, TransferReport, UploadDeclaration,
+            GenerateRestoralOrder, TransferReport, UploadDeclaration,
         },
         storage::StorageApi,
     },
     runtime_types::{
         cp_cess_common::{Hash as CPHash, SpaceProofInfo},
         pallet_file_bank::types::{
-            BucketInfo, DealInfo, FileInfo, RestoralOrderInfo, RestoralTargetInfo, SegmentList,
-            UserBrief, UserFileSliceInfo,
+            BucketInfo, DealInfo, FileInfo, RestoralOrderInfo, SegmentList, UserBrief,
+            UserFileSliceInfo,
         },
         sp_core::bounded::bounded_vec::BoundedVec,
     },
@@ -93,32 +93,6 @@ impl Sdk {
         }
     }
 
-    // query_invalid_file
-    pub async fn query_invalid_file(&self, pk: &[u8]) -> Result<BoundedVec<CPHash>> {
-        let account = account_from_slice(pk);
-
-        let query = file_bank_storage().invalid_file(&account);
-
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
-    }
-
-    // query_miner_lock
-    pub async fn query_miner_lock(&self, pk: &[u8]) -> Result<u32> {
-        let account = account_from_slice(pk);
-
-        let query = file_bank_storage().miner_lock(&account);
-
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
-    }
-
     // query_bucket_info
     pub async fn query_bucket_info(&self, pk: &[u8], bucket_name: &str) -> Result<BucketInfo> {
         let account = account_from_slice(pk);
@@ -161,22 +135,6 @@ impl Sdk {
             Err(e) => {
                 bail!("{}", e);
             }
-        }
-    }
-
-    // query_restoral_target
-    pub async fn query_restoral_target(
-        &self,
-        pk: &[u8],
-    ) -> Result<RestoralTargetInfo<AccountId32, u32>> {
-        let account = account_from_slice(pk);
-
-        let query = file_bank_storage().restoral_target(&account);
-
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
         }
     }
 
@@ -300,7 +258,7 @@ impl Sdk {
 
     pub async fn replace_idle_space(
         &self,
-        idle_sig_info: SpaceProofInfo<AccountId32, u32>,
+        idle_sig_info: SpaceProofInfo<AccountId32>,
         sign: &[u8; 256],
     ) -> Result<String> {
         let tx = file_bank_tx().replace_idle_space(idle_sig_info, *sign);
@@ -341,7 +299,7 @@ impl Sdk {
 
     pub async fn cert_idle_space(
         &self,
-        idle_sig_info: SpaceProofInfo<AccountId32, u32>,
+        idle_sig_info: SpaceProofInfo<AccountId32>,
         sign: &[u8; 256],
     ) -> Result<String> {
         let tx = file_bank_tx().cert_idle_space(idle_sig_info, *sign);
@@ -354,7 +312,11 @@ impl Sdk {
     }
 
     // create_bucket
-    pub async fn create_bucket(&self, pk: &[u8], name: &str) -> Result<String> {
+    pub async fn create_bucket(
+        &self,
+        pk: &[u8],
+        name: &str,
+    ) -> Result<(String, create_bucket_event)> {
         let account = account_from_slice(pk);
 
         let name_bytes: BoundedVec<u8> = BoundedVec(name.as_bytes().to_vec());
@@ -367,14 +329,14 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(create_bucket_event) = events.find_first::<CreateBucket>()? {
-            Ok(tx_hash)
+            Ok((tx_hash, create_bucket_event))
         } else {
             bail!("Unable to create bucket");
         }
     }
 
     // delete_bucket
-    pub async fn delete_bucket(&self, pk: &[u8], name: &str) -> Result<String> {
+    pub async fn delete_bucket(&self, pk: &[u8], name: &str) -> Result<(String, DeleteBucket)> {
         let account = account_from_slice(pk);
 
         let name_bytes: BoundedVec<u8> = BoundedVec(name.as_bytes().to_vec());
@@ -387,7 +349,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(delete_bucket_event) = events.find_first::<DeleteBucket>()? {
-            Ok(tx_hash)
+            Ok((tx_hash, delete_bucket_event))
         } else {
             bail!("Unable to delete bucket");
         }
@@ -397,7 +359,7 @@ impl Sdk {
         &self,
         file_hash: &str,
         restoral_fragment: &str,
-    ) -> Result<String> {
+    ) -> Result<(String, GenerateRestoralOrder)> {
         let file_hash = hash_from_string(file_hash);
         let restoral_fragment_hash = hash_from_string(restoral_fragment);
 
@@ -409,13 +371,16 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(generate_restoral_order) = events.find_first::<GenerateRestoralOrder>()? {
-            Ok(tx_hash)
+            Ok((tx_hash, generate_restoral_order))
         } else {
             bail!("Unable to claim restoral order");
         }
     }
 
-    pub async fn claim_restoral_order(&self, restoral_fragment: &str) -> Result<String> {
+    pub async fn claim_restoral_order(
+        &self,
+        restoral_fragment: &str,
+    ) -> Result<(String, ClaimRestoralOrder)> {
         let hash = hash_from_string(restoral_fragment);
 
         let tx = file_bank_tx().claim_restoral_order(hash);
@@ -426,7 +391,7 @@ impl Sdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(claim_restoral_order) = events.find_first::<ClaimRestoralOrder>()? {
-            Ok(tx_hash)
+            Ok((tx_hash, claim_restoral_order))
         } else {
             bail!("Unable to claim restoral order");
         }
@@ -464,34 +429,18 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn miner_exit_prep(&self) -> Result<String> {
-        let tx = file_bank_tx().miner_exit_prep();
+    pub async fn root_clear_failed_count(&self) -> Result<String> {
+        let tx = file_bank_tx().root_clear_failed_count();
 
         let from = PairSigner::new(self.pair.clone());
 
-        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        let tx_hash = events.extrinsic_hash().to_string();
-        if let Some(exit_prep) = events.find_first::<MinerExitPrep>()? {
-            Ok(tx_hash)
-        } else {
-            bail!("Unable to execute miner exit prep");
-        }
-    }
-
-    pub async fn miner_exit(&self, miner: &[u8]) -> Result<String> {
-        let account = account_from_slice(miner);
-
-        let tx = file_bank_tx().miner_exit(account);
-
-        let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
 
         Ok(hash.to_string())
     }
 
-    pub async fn miner_withdraw(&self) -> Result<String> {
-        let tx = file_bank_tx().miner_withdraw();
+    pub async fn miner_clear_failed_count(&self) -> Result<String> {
+        let tx = file_bank_tx().miner_clear_failed_count();
 
         let from = PairSigner::new(self.pair.clone());
 

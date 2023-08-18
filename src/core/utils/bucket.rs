@@ -4,7 +4,7 @@ use crate::core::pattern::{MAX_BUCKET_NAME_LENGHT, MIN_BUCKET_NAME_LENGTH};
 
 use super::ip::is_valid_ip;
 
-fn check_bucket_name(name: &str) -> bool {
+pub fn check_bucket_name(name: &str) -> bool {
     if name.len() < MIN_BUCKET_NAME_LENGTH || name.len() > MAX_BUCKET_NAME_LENGHT {
         return false;
     }

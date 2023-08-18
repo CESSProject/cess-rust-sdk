@@ -74,7 +74,7 @@ fn split_data_into_shards(data: &[u8], shard_size: usize) -> Vec<Vec<u8>> {
     shards
 }
 
-fn read_solomon_restore(out_path: &str, shards_path: Vec<String>) -> Result<()> {
+pub fn read_solomon_restore(out_path: &str, shards_path: Vec<String>) -> Result<()> {
     if Path::new(out_path).exists() {
         return Ok(());
     }

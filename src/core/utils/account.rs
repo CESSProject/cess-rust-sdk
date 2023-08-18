@@ -96,3 +96,20 @@ pub fn verify_address(address: &str, prefix: &[u8]) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{core::pattern::PUBLIC_DEOSS_ACCOUNT, utils::account_from_slice};
+
+    use super::parsing_public_key;
+
+    #[test]
+    fn test_parsing_public_key() {
+        let pk = parsing_public_key(PUBLIC_DEOSS_ACCOUNT).unwrap();
+        let account = account_from_slice(&pk);
+        assert_eq!(
+            account.to_string(),
+            "5F2EcqaLtFps43aGFLHAkZ4RSHC6qAxZKdvg5bYH4uEo7Ufx"
+        );
+    }
+}

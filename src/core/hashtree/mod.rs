@@ -56,16 +56,7 @@ pub fn validate_proof(proof: &Proof<[u8; 64]>, leaf: &[u8; 64], root: &[u8; 64])
     proof.validate::<Sha256Algo>() && proof.item().as_ref() == leaf && proof.root().as_ref() == root
 }
 
-pub fn build_merkle_root_hash(segment_paths: &[PathBuf]) -> Result<String> {
-    if segment_paths.is_empty() {
-        bail!("empty segment paths");
-    }
-
-    let segment_hash: Vec<_> = segment_paths
-        .iter()
-        .map(|path| path.to_str().unwrap_or("").to_string())
-        .collect();
-
+pub fn build_merkle_root_hash(segment_hash: Vec<String>) -> Result<String> {
     if segment_hash.len() == 1 {
         return Ok(segment_hash[0].clone());
     }

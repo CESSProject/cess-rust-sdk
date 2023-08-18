@@ -14,8 +14,8 @@ use crate::{init_api, polkadot};
 use polkadot::runtime_types::cp_cess_common::Hash;
 
 pub fn hex_string_to_bytes(hex: &str) -> [u8; 64] {
-    let hex_without_prefix = if hex.starts_with("0x") {
-        &hex[2..]
+    let hex_without_prefix = if let Some(hex_without_prefix) = hex.strip_prefix("0x") {
+        hex_without_prefix
     } else {
         hex
     };

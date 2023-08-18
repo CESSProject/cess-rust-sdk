@@ -26,7 +26,6 @@ reed-solomon-erasure = "6.0.0"
 regex = "1.9.1"
 reqwest = { version = "0.11.18", features = ["blocking", "multipart"] }
 sha2 = "0.10.7"
-smallvec = "1.11.0"
 sp-keyring = "24.0.0"
 subxt = { git = "https://github.com/paritytech/subxt", tag="v0.29.0"}
 sys-info = "0.9.1"

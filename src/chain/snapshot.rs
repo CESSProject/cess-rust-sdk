@@ -17,7 +17,7 @@ impl Sdk {
             if v.miner == account {
                 for (k, value) in netinfo.net_snap_shot.random_list.0.iter().enumerate() {
                     chal.random[k] = hex::encode(value).into_bytes();
-                    chal.random_index_list[k] = netinfo.net_snap_shot.random_index_list.0[k] as u32;
+                    chal.random_index_list[k] = netinfo.net_snap_shot.random_index_list.0[k];
                 }
                 chal.start = netinfo.net_snap_shot.start;
                 break;

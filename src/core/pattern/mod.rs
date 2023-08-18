@@ -30,13 +30,13 @@ pub enum Pallets {
 impl Display for Pallets {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
-            Pallets::Audit => write!(f, "{}", "Audit"),
-            Pallets::Oss => write!(f, "{}", "Oss"),
-            Pallets::FileBank => write!(f, "{}", "FileBank"),
-            Pallets::TeeWorker => write!(f, "{}", "TeeWorker"),
-            Pallets::SMiner => write!(f, "{}", "Sminer"),
-            Pallets::StorageHandler => write!(f, "{}", "StorageHandler"),
-            Pallets::System => write!(f, "{}", "System"),
+            Pallets::Audit => write!(f, "Audit"),
+            Pallets::Oss => write!(f, "Oss"),
+            Pallets::FileBank => write!(f, "FileBank"),
+            Pallets::TeeWorker => write!(f, "TeeWorker"),
+            Pallets::SMiner => write!(f, "Sminer"),
+            Pallets::StorageHandler => write!(f, "StorageHandler"),
+            Pallets::System => write!(f, "System"),
         }
     }
 }
@@ -85,28 +85,28 @@ pub enum ChainState {
 impl Display for ChainState {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
-            ChainState::UnverifyProof => write!(f, "{}", "UnverifyProof"),
-            ChainState::ChallengeDuration => write!(f, "{}", "ChallengeDuration"),
-            ChainState::ChallengeSnapshot => write!(f, "{}", "ChallengeSnapShot"),
-            ChainState::AuthorityList => write!(f, "{}", "AuthorityList"),
-            ChainState::AllMiner => write!(f, "{}", "AllMiner"),
-            ChainState::MinerItems => write!(f, "{}", "MinerItems"),
-            ChainState::RewardMap => write!(f, "{}", "RewardMap"),
-            ChainState::Expanders => write!(f, "{}", "Expenders"),
-            ChainState::TeeWorkerMap => write!(f, "{}", "TeeWorkerMap"),
-            ChainState::TeeProd2Pk => write!(f, "{}", "TeePodr2Pk"),
-            ChainState::File => write!(f, "{}", "File"),
-            ChainState::Bucket => write!(f, "{}", "Bucket"),
-            ChainState::BucketList => write!(f, "{}", "UserBucketList"),
-            ChainState::DealMap => write!(f, "{}", "DealMap"),
-            ChainState::FillerMap => write!(f, "{}", "FillerMap"),
-            ChainState::PendingReplace => write!(f, "{}", "PendingReplacements"),
-            ChainState::RestoralOrder => write!(f, "{}", "RestoralOrder"),
-            ChainState::RestoralTargetInfo => write!(f, "{}", "RestoralTarget"),
-            ChainState::UserSpaceInfo => write!(f, "{}", "UserOwnedSpace"),
-            ChainState::UnitPrice => write!(f, "{}", "UnitPrice"),
-            ChainState::Account => write!(f, "{}", "Account"),
-            ChainState::Events => write!(f, "{}", "Events"),
+            ChainState::UnverifyProof => write!(f, "UnverifyProof"),
+            ChainState::ChallengeDuration => write!(f, "ChallengeDuration"),
+            ChainState::ChallengeSnapshot => write!(f, "ChallengeSnapShot"),
+            ChainState::AuthorityList => write!(f, "AuthorityList"),
+            ChainState::AllMiner => write!(f, "AllMiner"),
+            ChainState::MinerItems => write!(f, "MinerItems"),
+            ChainState::RewardMap => write!(f, "RewardMap"),
+            ChainState::Expanders => write!(f, "Expenders"),
+            ChainState::TeeWorkerMap => write!(f, "TeeWorkerMap"),
+            ChainState::TeeProd2Pk => write!(f, "TeePodr2Pk"),
+            ChainState::File => write!(f, "File"),
+            ChainState::Bucket => write!(f, "Bucket"),
+            ChainState::BucketList => write!(f, "UserBucketList"),
+            ChainState::DealMap => write!(f, "DealMap"),
+            ChainState::FillerMap => write!(f, "FillerMap"),
+            ChainState::PendingReplace => write!(f, "PendingReplacements"),
+            ChainState::RestoralOrder => write!(f, "RestoralOrder"),
+            ChainState::RestoralTargetInfo => write!(f, "RestoralTarget"),
+            ChainState::UserSpaceInfo => write!(f, "UserOwnedSpace"),
+            ChainState::UnitPrice => write!(f, "UnitPrice"),
+            ChainState::Account => write!(f, "Account"),
+            ChainState::Events => write!(f, "Events"),
         }
     }
 }
@@ -159,148 +159,132 @@ impl Display for Extrinsics {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
             Extrinsics::TxAuditSubmitProof => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "submit_proof")
+                write!(f, "{}submit_proof", extrinsics_default_prefix(self))
             }
             Extrinsics::TxAuditSubmitIdleProof => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "submit_idle_proof"
+                "{}submit_idle_proof",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxAuditSubmitServiceProof => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "submit_service_proof"
+                "{}submit_service_proof",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxOssRegister => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "register")
+                write!(f, "{}register", extrinsics_default_prefix(self))
             }
             Extrinsics::TxOssUpdate => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "update")
+                write!(f, "{}update", extrinsics_default_prefix(self))
             }
             Extrinsics::TxOssDestroy => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "destroy")
+                write!(f, "{}destroy", extrinsics_default_prefix(self))
             }
             Extrinsics::TxOssAuthorize => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "authorize")
+                write!(f, "{}authorize", extrinsics_default_prefix(self))
             }
             Extrinsics::TxOssUnauthorize => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "cancel_authorize"
+                "{}cancel_authorize",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxSMinerRegister => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "regnstk")
+                write!(f, "{}regnstk", extrinsics_default_prefix(self))
             }
             Extrinsics::TxSMinerIncreaseStakes => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "increase_collateral"
+                "{}increase_collateral",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxSMinerUpdatePeerId => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "update_peer_id")
+                write!(f, "{}update_peer_id", extrinsics_default_prefix(self))
             }
             Extrinsics::TxSMinerUpdateIncome => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "update_beneficiary"
+                "{}update_beneficiary",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxSMinerclaimReward => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "receive_reward")
+                write!(f, "{}receive_reward", extrinsics_default_prefix(self))
             }
             Extrinsics::TxFileBankPutBucket => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "create_bucket")
+                write!(f, "{}create_bucket", extrinsics_default_prefix(self))
             }
             Extrinsics::TxFileBankDelBucket => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "delete_bucket")
+                write!(f, "{}delete_bucket", extrinsics_default_prefix(self))
             }
             Extrinsics::TxFileBankDelFile => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "delete_file")
+                write!(f, "{}delete_file", extrinsics_default_prefix(self))
             }
             Extrinsics::TxFileBankDelFiller => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "delete_filler")
+                write!(f, "{}delete_filler", extrinsics_default_prefix(self))
             }
             Extrinsics::TxFileBankUploadDec => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "upload_declaration"
+                "{}upload_declaration",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankUploadFiller => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "upload_filler")
+                write!(f, "{}upload_filler", extrinsics_default_prefix(self))
             }
             Extrinsics::TxFileBankFileReport => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "transfer_report"
+                "{}transfer_report",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankReplaceFile => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "replace_file_report"
+                "{}replace_file_report",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankMinerExitPrep => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "miner_exit_prep"
+                "{}miner_exit_prep",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankWithdraw => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "miner_withdraw")
+                write!(f, "{}miner_withdraw", extrinsics_default_prefix(self))
             }
             Extrinsics::TxFileBankGenRestoreOrder => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "generate_restoral_order"
+                "{}generate_restoral_order",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankClaimRestoreOrder => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "claim_restoral_order"
+                "{}claim_restoral_order",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankClaimNoExistOrder => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "claim_restoral_noexist_order"
+                "{}claim_restoral_noexist_order",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankRestoralComplete => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "restoral_order_complete"
+                "{}restoral_order_complete",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankCertIdleSpace => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "cert_idle_space"
+                "{}cert_idle_space",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxFileBankReplaceIdleSpace => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "replace_idle_space"
+                "{}replace_idle_space",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxStorageBuySpace => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "buy_space")
+                write!(f, "{}buy_space", extrinsics_default_prefix(self))
             }
             Extrinsics::TxStorageExpansionSpace => write!(
                 f,
-                "{}{}",
-                extrinsics_default_prefix(self),
-                "expansion_space"
+                "{}expansion_space",
+                extrinsics_default_prefix(self)
             ),
             Extrinsics::TxStorageRenewalSpace => {
-                write!(f, "{}{}", extrinsics_default_prefix(self), "renewal_space")
+                write!(f, "{}renewal_space", extrinsics_default_prefix(self))
             }
         }
     }
@@ -311,18 +295,18 @@ fn extrinsics_default_prefix(extrinsics: &Extrinsics) -> String {
         Extrinsics::TxAuditSubmitProof
         | Extrinsics::TxAuditSubmitIdleProof
         | Extrinsics::TxAuditSubmitServiceProof => {
-            format!("{}{}", Pallets::Audit.to_string(), DOT)
+            format!("{}{}", Pallets::Audit, DOT)
         }
         Extrinsics::TxOssRegister
         | Extrinsics::TxOssUpdate
         | Extrinsics::TxOssDestroy
         | Extrinsics::TxOssAuthorize
-        | Extrinsics::TxOssUnauthorize => format!("{}{}", Pallets::Oss.to_string(), DOT),
+        | Extrinsics::TxOssUnauthorize => format!("{}{}", Pallets::Oss, DOT),
         Extrinsics::TxSMinerRegister
         | Extrinsics::TxSMinerIncreaseStakes
         | Extrinsics::TxSMinerUpdatePeerId
         | Extrinsics::TxSMinerUpdateIncome
-        | Extrinsics::TxSMinerclaimReward => format!("{}{}", Pallets::SMiner.to_string(), DOT),
+        | Extrinsics::TxSMinerclaimReward => format!("{}{}", Pallets::SMiner, DOT),
         Extrinsics::TxFileBankPutBucket
         | Extrinsics::TxFileBankDelBucket
         | Extrinsics::TxFileBankDelFile
@@ -339,12 +323,12 @@ fn extrinsics_default_prefix(extrinsics: &Extrinsics) -> String {
         | Extrinsics::TxFileBankRestoralComplete
         | Extrinsics::TxFileBankCertIdleSpace
         | Extrinsics::TxFileBankReplaceIdleSpace => {
-            format!("{}{}", Pallets::FileBank.to_string(), DOT)
+            format!("{}{}", Pallets::FileBank, DOT)
         }
         Extrinsics::TxStorageBuySpace
         | Extrinsics::TxStorageExpansionSpace
         | Extrinsics::TxStorageRenewalSpace => {
-            format!("{}{}", Pallets::StorageHandler.to_string(), DOT)
+            format!("{}{}", Pallets::StorageHandler, DOT)
         }
     }
 }
@@ -363,11 +347,11 @@ pub enum RPC {
 impl Display for RPC {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            RPC::RpcSysProperties => write!(f, "{}", "system_properties"),
-            RPC::RpcSysSyncState => write!(f, "{}", "system_syncState"),
-            RPC::RpcSysVersion => write!(f, "{}", "system_version"),
-            RPC::RpcSysChain => write!(f, "{}", "system_chain"),
-            RPC::RpcNetListening => write!(f, "{}", "net_listening"),
+            RPC::RpcSysProperties => write!(f, "system_properties"),
+            RPC::RpcSysSyncState => write!(f, "system_syncState"),
+            RPC::RpcSysVersion => write!(f, "system_version"),
+            RPC::RpcSysChain => write!(f, "system_chain"),
+            RPC::RpcNetListening => write!(f, "net_listening"),
         }
     }
 }
@@ -381,9 +365,9 @@ pub enum ServiceName {
 impl Display for ServiceName {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            ServiceName::DeOss => write!(f, "{}", "deoss"),
-            ServiceName::SMiner => write!(f, "{}", "bucket"),
-            ServiceName::SDK => write!(f, "{}", "client"),
+            ServiceName::DeOss => write!(f, "deoss"),
+            ServiceName::SMiner => write!(f, "bucket"),
+            ServiceName::SDK => write!(f, "client"),
         }
     }
 }
@@ -398,10 +382,10 @@ pub enum MinerState {
 impl Display for MinerState {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            MinerState::Positive => write!(f, "{}", "positive"),
-            MinerState::Frozen => write!(f, "{}", "frozen"),
-            MinerState::Exit => write!(f, "{}", "exit"),
-            MinerState::Lock => write!(f, "{}", "lock"),
+            MinerState::Positive => write!(f, "positive"),
+            MinerState::Frozen => write!(f, "frozen"),
+            MinerState::Exit => write!(f, "exit"),
+            MinerState::Lock => write!(f, "lock"),
         }
     }
 }
@@ -415,9 +399,9 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Error::Failed => write!(f, "{}", "failed"),
-            Error::Timeout => write!(f, "{}", "timeout"),
-            Error::Empty => write!(f, "{}", "empty"),
+            Error::Failed => write!(f, "failed"),
+            Error::Timeout => write!(f, "timeout"),
+            Error::Empty => write!(f, "empty"),
         }
     }
 }

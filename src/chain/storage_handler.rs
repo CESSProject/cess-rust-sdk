@@ -1,14 +1,12 @@
 use super::Sdk;
 use crate::polkadot;
 use crate::utils::{
-    account_from_slice, hash_from_string, query_storage, sign_and_sbmit_tx_default,
+    account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};
 use polkadot::{
-    runtime_types::{
-        pallet_storage_handler::types::OwnedSpaceDetails, sp_core::bounded::bounded_vec::BoundedVec,
-    },
+    runtime_types::pallet_storage_handler::types::OwnedSpaceDetails,
     storage_handler::{
         calls::TransactionApi,
         events::{BuySpace, ExpansionSpace, RenewalSpace},
@@ -16,7 +14,6 @@ use polkadot::{
     },
 };
 use subxt::tx::PairSigner;
-use subxt::utils::AccountId32;
 
 fn storage_handler_storage() -> StorageApi {
     polkadot::storage().storage_handler()

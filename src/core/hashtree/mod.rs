@@ -1,9 +1,9 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 use merkle_light::hash::Algorithm;
 use merkle_light::merkle::MerkleTree;
 use merkle_light::proof::Proof;
 use sha2::{Digest, Sha256};
-use std::{hash::Hasher, path::PathBuf};
+use std::hash::Hasher;
 
 use super::utils::hash::calc_sha256;
 

@@ -1,14 +1,11 @@
 use anyhow::{bail, Result};
-use std::borrow::BorrowMut;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use super::pattern::{DATA_SHARDS, PAR_SHARDS, SEGMENT_SIZE};
 use super::utils::hash::calc_sha256;
-use reed_solomon_erasure::galois_8::{self, ReedSolomon};
-use reed_solomon_erasure::{convert_2D_slices, Error, Field, ReconstructShard};
-use smallvec::SmallVec;
+use reed_solomon_erasure::galois_8::ReedSolomon;
 
 pub fn reed_solomon(path: &str) -> Result<Vec<PathBuf>> {
     let mut shards_path = Vec::new();
@@ -40,11 +37,11 @@ pub fn reed_solomon(path: &str) -> Result<Vec<PathBuf>> {
     let shard_size = b.len() / (DATA_SHARDS + PAR_SHARDS) as usize;
     let shards = split_data_into_shards(&b, shard_size);
 
-    let mut encoded_shards = shards.clone();
+    let mut encoded_shards = shards;
     enc.encode(&mut encoded_shards)?;
 
     // Write out the resulting files.
-    for (index, shard) in encoded_shards.iter().enumerate() {
+    for (_, shard) in encoded_shards.iter().enumerate() {
         let hash_str = calc_sha256(shard)?;
         let newpath = base_dir.join(hash_str);
 
@@ -93,10 +90,10 @@ pub fn read_solomon_restore(out_path: &str, shards_path: Vec<String>) -> Result<
         shards.push(shard);
     }
 
-    let result: Vec<_> = if let Err(_) = enc.verify(&shards) {
+    let result: Vec<_> = if enc.verify(&shards).is_err() {
         let mut shards: Vec<_> = shards.iter().cloned().map(Some).collect();
         enc.reconstruct(&mut shards)?;
-        shards.into_iter().filter_map(|x| x).collect()
+        shards.into_iter().flatten().collect()
     } else {
         Vec::new()
     };

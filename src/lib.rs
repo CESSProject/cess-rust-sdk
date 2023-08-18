@@ -1,4 +1,3 @@
-#[macro_use(shards)]
 extern crate reed_solomon_erasure;
 
 pub mod chain;

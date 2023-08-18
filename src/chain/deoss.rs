@@ -1,21 +1,13 @@
 use super::Sdk;
 use crate::polkadot;
 use crate::utils::{
-    account_from_slice, hash_from_string, query_storage, sign_and_sbmit_tx_default,
+    account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};
 use polkadot::{
     oss::{calls::TransactionApi, events::Authorize, storage::StorageApi},
-    runtime_types::{
-        cp_cess_common::{Hash as CPHash, SpaceProofInfo},
-        // cp_bloom_filter::BloomFilter,
-        // pallet_oss::{
-        //     // sr25519::app_sr25519::{Public, Signature},
-        //     // types::{},
-        // },
-        sp_core::bounded::{bounded_vec::BoundedVec, weak_bounded_vec::WeakBoundedVec},
-    },
+    runtime_types::sp_core::bounded::bounded_vec::BoundedVec,
 };
 use subxt::tx::PairSigner;
 use subxt::utils::AccountId32;

@@ -375,7 +375,6 @@ dependencies = [
  "regex",
  "reqwest",
  "sha2 0.10.7",
- "smallvec",
  "sp-keyring",
  "subxt",
  "sys-info",

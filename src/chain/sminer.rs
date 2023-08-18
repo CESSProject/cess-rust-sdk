@@ -1,7 +1,7 @@
 use super::Sdk;
 use crate::polkadot;
 use crate::utils::{
-    account_from_slice, hash_from_string, query_storage, sign_and_sbmit_tx_default,
+    account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};

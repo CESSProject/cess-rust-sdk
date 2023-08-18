@@ -8,7 +8,7 @@ const CESS_PREFIX: [u8; 2] = [0x50, 0xac];
 pub fn parsing_public_key(address: &str) -> Result<Vec<u8>> {
     match verify_address(address, &CESS_PREFIX) {
         Err(_) => {
-            if let Err(_) = verify_address(address, &SUBSTRATE_PREFIX) {
+            if verify_address(address, &SUBSTRATE_PREFIX).is_err() {
                 bail!("Invalid Account");
             }
             let data = bs58::decode(address)
@@ -44,7 +44,7 @@ fn encode_public_key_as_account(public_key: &[u8], prefix: &[u8]) -> Result<Stri
     if public_key.len() != 32 {
         bail!("Invalid public key")
     }
-    let payload = append_bytes(&prefix, public_key);
+    let payload = append_bytes(prefix, public_key);
     let input = append_bytes(&SS_PREFIX, &payload);
     let mut hasher = Blake2b512::new();
     hasher.update(input);

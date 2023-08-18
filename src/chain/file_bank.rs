@@ -7,10 +7,7 @@ use crate::utils::{
 use anyhow::{bail, Result};
 use polkadot::{
     file_bank::{
-        calls::{
-            types::{DealReassignMiner, OwnershipTransfer},
-            TransactionApi,
-        },
+        calls::TransactionApi,
         events::{
             CalculateEnd, ClaimRestoralOrder, CreateBucket, DeleteBucket, DeleteFile,
             GenerateRestoralOrder, TransferReport, UploadDeclaration,

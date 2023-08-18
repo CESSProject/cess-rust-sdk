@@ -1,21 +1,20 @@
 use super::Sdk;
 use crate::core::erasure::{read_solomon_restore, reed_solomon};
-use crate::core::hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash, build_tree};
+use crate::core::hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash};
 use crate::core::pattern::{SegmentDataInfo, PUBLIC_DEOSS, PUBLIC_DEOSS_ACCOUNT, SEGMENT_SIZE};
 use crate::core::utils::account::parsing_public_key;
 use crate::core::utils::bucket::check_bucket_name;
 use crate::core::utils::hash::calc_sha256;
 use crate::core::utils::str::get_random_code;
-use crate::core::utils::{self, file};
+use crate::core::utils;
 use crate::polkadot;
 use crate::utils::account_from_slice;
 use anyhow::{anyhow, bail, Result};
 use base58::ToBase58;
 use reqwest::blocking::{Client, RequestBuilder};
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
-use sha2::{Digest, Sha256};
 use std::fs::{self, File};
-use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use subxt::ext::sp_core::Pair;
 
@@ -106,7 +105,7 @@ impl Sdk {
                 {
                     fragment_hash[i] = byte;
                 }
-                fragment_hashes.push(Hash(fragment_hash.clone()));
+                fragment_hashes.push(Hash(fragment_hash));
             }
 
             segment_list.push(SegmentList {
@@ -222,7 +221,7 @@ impl Sdk {
             bail!("empty url")
         }
 
-        if !url.ends_with("/") {
+        if !url.ends_with('/') {
             url = format!("{}/", url);
         }
 

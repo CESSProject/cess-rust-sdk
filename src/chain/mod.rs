@@ -16,10 +16,11 @@ pub struct Sdk {
     pair: Pair,
     name: String,
     signature_acc: String,
+    enabled_p2p: bool,
 }
 
 impl Sdk {
-    pub fn new(mnemonic: &str, service_name: &str) -> Self {
+    pub fn new(mnemonic: &str, service_name: &str, enabled_p2p: bool) -> Self {
         let pair =
             <sp_keyring::sr25519::sr25519::Pair as sp_core_pair>::from_string(mnemonic, None)
                 .unwrap();
@@ -27,6 +28,7 @@ impl Sdk {
             pair: pair.clone(),
             name: service_name.to_string(),
             signature_acc: encode_public_key_as_cess_account(&pair.public().0.clone()).unwrap(),
+            enabled_p2p,
         }
     }
 
@@ -40,5 +42,13 @@ impl Sdk {
 
     pub fn get_signature_acc(&self) -> String {
         self.signature_acc.clone()
+    }
+
+    pub fn set_enabled_p2p(&mut self, set: bool) {
+        self.enabled_p2p = set;
+    }
+
+    pub fn get_enabled_p2p(&self) -> bool {
+        self.enabled_p2p
     }
 }

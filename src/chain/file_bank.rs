@@ -453,7 +453,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_storage_order() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name",  true);
         let root_hash = "";
         let result = sdk.query_storage_order(root_hash).await;
         match result {
@@ -468,7 +468,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_file_metadata() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let root_hash = "";
         let result = sdk.query_file_metadata(root_hash).await;
         match result {
@@ -483,7 +483,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_user_hold_file_list() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let result = sdk.query_user_hold_file_list(&pk_bytes).await;
         match result {
@@ -498,7 +498,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_pending_replacements() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let result = sdk.query_pending_replacements(&pk_bytes).await;
         match result {
@@ -513,7 +513,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_bucket_info() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk = PUB_KEY;
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let name = "MyFirstBucket";
@@ -530,7 +530,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_user_bucket_list() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let result = sdk.query_user_bucket_list(&pk_bytes).await;
         match result {
@@ -545,7 +545,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_all_bucket_name() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let result = sdk.query_all_bucket_name(&pk_bytes).await;
         match result {
@@ -560,7 +560,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_restoral_order() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let root_hash = "";
         let result = sdk.query_restoral_order(root_hash).await;
         match result {
@@ -575,7 +575,7 @@ mod test {
 
     #[tokio::test]
     async fn test_query_clear_user_list() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let result = sdk.query_clear_user_list().await;
         match result {
             Ok(_) => {
@@ -589,7 +589,7 @@ mod test {
 
     #[tokio::test]
     async fn test_create_bucket() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let name = "MyFirstBucket";
         let result = sdk.create_bucket(&pk_bytes, name).await;
@@ -606,7 +606,7 @@ mod test {
 
     #[tokio::test]
     async fn test_delete_bucket() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let name = "MyFirstBucket";
         let result = sdk.delete_bucket(&pk_bytes, name).await;

@@ -34,7 +34,7 @@ mod test {
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
     #[tokio::test]
     pub async fn test_query_challenge() {
-        let sdk = Sdk::new(MNEMONIC, "service_name");
+        let sdk = Sdk::new(MNEMONIC, "service_name", true);
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
         let result = sdk.query_challenge(&pk_bytes).await;

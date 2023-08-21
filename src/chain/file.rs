@@ -22,10 +22,12 @@ use polkadot::{
     file_bank::events::UploadDeclaration,
     runtime_types::{
         cp_cess_common::Hash,
-        pallet_file_bank::types::{SegmentList, UserBrief},
+        pallet_file_bank::types::{MinerTaskList, SegmentList, UserBrief},
         sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
+
+use libp2p::PeerId;
 
 impl Sdk {
     pub async fn processing_data(file: &str) -> Result<(Vec<SegmentDataInfo>, String)> {
@@ -133,7 +135,9 @@ impl Sdk {
 
     pub async fn store_file(&self, file: &str, bucket: &str) -> Result<String> {
         let pk = parsing_public_key(PUBLIC_DEOSS_ACCOUNT).unwrap();
-        self.authorize(&pk).await;
+        if let Err(err) = self.authorize(&pk).await {
+            bail!(err)
+        };
 
         self.upload_to_gateway(PUBLIC_DEOSS, file, bucket).await
     }
@@ -249,6 +253,27 @@ impl Sdk {
         }
 
         Ok(())
+    }
+
+    pub async fn query_assigned_miner_peer_id(&self, miner_task_list: Vec<MinerTaskList>) -> Result<Vec<PeerId>> {
+        let mut peer_ids = Vec::new();
+
+        for v in miner_task_list {
+            let pk = &v.miner.0;
+            let miner_info = match self.query_miner_items(pk).await {
+                Ok(miner_info) => miner_info,
+                Err(err) => bail!(err),
+            };
+
+            let peer_id = match PeerId::from_bytes(&miner_info.peer_id){
+                Ok(peer_id) => peer_id,
+                Err(err) => bail!(err),
+            };
+
+            peer_ids.push(peer_id);
+        }
+
+        Ok(peer_ids)
     }
 }
 

@@ -14,7 +14,7 @@ pub const BLOCK_INTERVAL: Duration = Duration::from_secs(6);
 
 pub const MAX_SUBMITED_IDLE_FILE_META: usize = 30;
 
-pub const PUBLIC_DEOSS: &str = "https://deoss-pub-gateway.cess.cloud/";
+pub const PUBLIC_DEOSS: &str = "http://deoss-pub-gateway.cess.cloud/";
 pub const PUBLIC_DEOSS_ACCOUNT: &str = "cXhwBytXqrZLr1qM5NHJhCzEMckSTzNKw17ci2aHft6ETSQm9";
 
 pub enum Pallets {

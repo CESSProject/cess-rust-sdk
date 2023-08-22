@@ -11,8 +11,8 @@ use crate::polkadot;
 use crate::utils::account_from_slice;
 use anyhow::{anyhow, bail, Result};
 use base58::ToBase58;
-use reqwest::blocking::{Client, RequestBuilder};
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+use reqwest::{Client, RequestBuilder};
+use reqwest::header::{HeaderMap, HeaderValue};
 use std::fs::{self, File};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -171,27 +171,27 @@ impl Sdk {
 
         let mut headers = HeaderMap::new();
         headers.insert("BucketName", HeaderValue::from_str(bucket_name)?);
-        headers.insert("Account", HeaderValue::from_str(&self.get_signature_acc())?); // Assuming self.name is the signature account
+        headers.insert("Account", HeaderValue::from_str(&self.get_signature_acc())?);
         headers.insert("Message", HeaderValue::from_str(&message)?);
         headers.insert("Signature", HeaderValue::from_str(&sig.0.to_base58())?);
 
-        let client = Client::builder().build()?;
+        let client = match Client::builder().build(){
+            Ok(client) => client,
+            Err(err) => {
+                bail!("{}", err)
+            }
+        };
         let request_builder: RequestBuilder = client.put(url).headers(headers);
-
-        // let mut body = Multipart::from_request(req);
-        // let form_file = body.add_file("file", upload_file)?;
 
         let mut file = File::open(upload_file)?;
         let mut file_content = Vec::new();
         file.read_to_end(&mut file_content)?;
 
         let response = request_builder
-            .header(CONTENT_TYPE, "multipart/form-data")
             .body(file_content)
-            .send()?;
+            .send().await?;
         let status_code = response.status();
-
-        let response_text = response.text()?;
+        let response_text = response.text().await?;
         if !status_code.is_success() {
             if !response_text.is_empty() {
                 bail!(response_text)
@@ -238,7 +238,7 @@ impl Sdk {
             .headers(headers);
 
         let f = File::create(&save_path)?;
-        let response = request_builder.send()?;
+        let response = request_builder.send().await?;
         let status_code = response.status();
 
         if !status_code.is_success() {
@@ -246,7 +246,7 @@ impl Sdk {
         }
         let mut writer = f;
 
-        let mut response_body = response.bytes()?;
+        let mut response_body = response.bytes().await?;
         while !response_body.is_empty() {
             let bytes_written = writer.write(&response_body)?;
             response_body = response_body[bytes_written..].to_vec().into();
@@ -333,4 +333,35 @@ fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
         segmenthash.push(base);
     }
     segmenthash
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{chain::Sdk, core::pattern::PUBLIC_DEOSS};
+    
+    const MNEMONIC: &str =
+        "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+
+    const PUB_KEY: &str = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
+
+    fn init_sdk() -> Sdk {
+        Sdk::new(MNEMONIC, "service_name",  true)
+    }
+
+    #[tokio::test]
+    async fn test_store_file() {
+        let sdk = init_sdk();
+        let result = sdk.store_file("/home/thgy/work/cess-rust-sdk/README.md", "SampleBucket").await;
+        println!("{:?}", result);
+    }
+
+    #[tokio::test]
+    async fn test_download_from_gateway() {
+        let sdk = init_sdk();
+        let path = "/home/thgy/work/cess-rust-sdk/";
+        let root_hash = "8d91b840beefb6fe9c852863ef279f8173058a6dbad66b687c5e05c17c04d137";
+        let result = sdk.download_from_gateway(PUBLIC_DEOSS,root_hash, path).await;
+        println!("{:?}", result);
+    }
+
 }

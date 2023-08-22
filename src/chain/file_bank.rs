@@ -454,7 +454,7 @@ mod test {
     fn init_sdk() -> Sdk {
         Sdk::new(MNEMONIC, "service_name",  true)
     }
-    
+
     #[tokio::test]
     async fn test_query_storage_order() {
         let sdk = init_sdk();
@@ -518,7 +518,6 @@ mod test {
     #[tokio::test]
     async fn test_query_bucket_info() {
         let sdk = init_sdk();
-        let pk = PUB_KEY;
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
         let name = "MyFirstBucket";
         let result = sdk.query_bucket_info(&pk_bytes, name).await;

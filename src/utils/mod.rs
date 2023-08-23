@@ -9,7 +9,7 @@ use subxt::{
     Config, PolkadotConfig,
 };
 
-use crate::{config::URL, init_api, polkadot};
+use crate::{init_api, polkadot};
 use polkadot::runtime_types::cp_cess_common::Hash;
 
 pub fn hex_string_to_bytes(hex: &str) -> [u8; 64] {
@@ -36,7 +36,7 @@ pub(crate) async fn query_storage<'address, Address>(
 where
     Address: StorageAddress<IsFetchable = Yes> + 'address,
 {
-    let api = init_api(URL).await;
+    let api = init_api().await;
 
     match api.storage().at_latest().await {
         Ok(mid_result) => match mid_result.fetch(query).await {
@@ -61,7 +61,7 @@ where
     T: Config,
     <T::ExtrinsicParams as ExtrinsicParams<T::Index, T::Hash>>::OtherParams: Default,
 {
-    let api = init_api(URL).await;
+    let api = init_api().await;
 
     match api.tx().sign_and_submit_default(tx, from).await {
         Ok(hash) => Ok(hash),
@@ -78,7 +78,7 @@ where
     Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig>,
     T: Config,
 {
-    let api = init_api(URL).await;
+    let api = init_api().await;
 
     match api.tx().sign_and_submit_then_watch_default(tx, from).await {
         Ok(result) => match result.wait_for_finalized_success().await {

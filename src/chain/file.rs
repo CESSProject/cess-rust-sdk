@@ -1,22 +1,19 @@
 use super::ChainSdk;
 use super::{deoss::DeOss, file_bank::FileBank, sminer::SMiner};
-use crate::config::{get_custom_deoss_account, get_custom_deoss_url};
-use crate::polkadot;
-use crate::utils::account_from_slice;
-use crate::{
-    config::{PUBLIC_DEOSS, PUBLIC_DEOSS_ACCOUNT},
-    core::{
-        erasure::{read_solomon_restore, reed_solomon},
-        hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash},
-        pattern::{SegmentDataInfo, SEGMENT_SIZE},
-        utils::{
-            account::parsing_public_key,
-            bucket::check_bucket_name,
-            hash::calc_sha256,
-            str::{get_random_code, rand_str},
-        },
+use crate::config::{get_deoss_account, get_deoss_url};
+use crate::core::{
+    erasure::{read_solomon_restore, reed_solomon},
+    hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash},
+    pattern::{SegmentDataInfo, SEGMENT_SIZE},
+    utils::{
+        account::parsing_public_key,
+        bucket::check_bucket_name,
+        hash::calc_sha256,
+        str::{get_random_code, rand_str},
     },
 };
+use crate::polkadot;
+use crate::utils::account_from_slice;
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use base58::ToBase58;
@@ -172,32 +169,20 @@ impl File for ChainSdk {
     }
 
     async fn store_file(&self, file: &str, bucket: &str) -> Result<String> {
-        let deoss_account = if let Some(custom_deoss_account) = get_custom_deoss_account() {
-            custom_deoss_account
-        } else {
-            PUBLIC_DEOSS_ACCOUNT.to_string()
-        };
+        let deoss_account = get_deoss_account();
 
         let pk = parsing_public_key(&deoss_account).unwrap();
         if let Err(err) = self.authorize(&pk).await {
             bail!(err)
         };
 
-        let deoss_url = if let Some(custom_deoss_url) = get_custom_deoss_url() {
-            custom_deoss_url
-        } else {
-            PUBLIC_DEOSS.to_string()
-        };
+        let deoss_url = get_deoss_url();
 
         self.upload_to_gateway(&deoss_url, file, bucket).await
     }
 
     async fn retrieve_file(&self, root_hash: &str, save_path: &str) -> Result<()> {
-        let deoss_url = if let Some(custom_deoss_url) = get_custom_deoss_url() {
-            custom_deoss_url
-        } else {
-            PUBLIC_DEOSS.to_string()
-        };
+        let deoss_url = get_deoss_url();
 
         self.download_from_gateway(&deoss_url, root_hash, save_path)
             .await

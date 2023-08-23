@@ -24,7 +24,7 @@ impl Sdk {
     /* Query functions */
 
     // query_authority_list
-    pub async fn query_authority_list(&self, pk: &[u8]) -> Result<BoundedVec<AccountId32>> {
+    pub async fn query_authority_list(&self, pk: &[u8]) -> Result<Option<BoundedVec<AccountId32>>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().authority_list(&account);
@@ -37,7 +37,7 @@ impl Sdk {
     }
 
     // oss
-    pub async fn oss(&self, pk: &[u8]) -> Result<[u8; 38]> {
+    pub async fn oss(&self, pk: &[u8]) -> Result<Option<[u8; 38]>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().oss(&account);

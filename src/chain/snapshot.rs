@@ -13,16 +13,19 @@ impl Sdk {
             ..Default::default()
         };
 
-        for v in &netinfo.miner_snapshot_list.0 {
-            if v.miner == account {
-                for (k, value) in netinfo.net_snap_shot.random_list.0.iter().enumerate() {
-                    chal.random[k] = hex::encode(value).into_bytes();
-                    chal.random_index_list[k] = netinfo.net_snap_shot.random_index_list.0[k];
+        if let Some(netinfo) = netinfo {
+            for v in &netinfo.miner_snapshot_list.0 {
+                if v.miner == account {
+                    for (k, value) in netinfo.net_snap_shot.random_list.0.iter().enumerate() {
+                        chal.random[k] = hex::encode(value).into_bytes();
+                        chal.random_index_list[k] = netinfo.net_snap_shot.random_index_list.0[k];
+                    }
+                    chal.start = netinfo.net_snap_shot.start;
+                    break;
                 }
-                chal.start = netinfo.net_snap_shot.start;
-                break;
             }
         }
+
         Ok(chal)
     }
 }
@@ -34,7 +37,7 @@ mod test {
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
 
     fn init_sdk() -> Sdk {
-        Sdk::new(MNEMONIC, "service_name",  true)
+        Sdk::new(MNEMONIC, "service_name")
     }
 
     #[tokio::test]

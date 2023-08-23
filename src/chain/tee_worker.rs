@@ -27,7 +27,7 @@ impl Sdk {
     /* Query functions */
 
     // query_tee_worker_map
-    pub async fn query_tee_worker_map(&self, pk: &[u8]) -> Result<TeeWorkerInfo> {
+    pub async fn query_tee_worker_map(&self, pk: &[u8]) -> Result<Option<TeeWorkerInfo>> {
         let account = account_from_slice(pk);
         let query = tee_worker_storage().tee_worker_map(&account);
 
@@ -39,7 +39,7 @@ impl Sdk {
     }
 
     // query_bond_acc
-    pub async fn query_bond_acc(&self) -> Result<BoundedVec<AccountId32>> {
+    pub async fn query_bond_acc(&self) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = tee_worker_storage().bond_acc();
 
         let result = query_storage(&query).await;
@@ -50,7 +50,7 @@ impl Sdk {
     }
 
     // query_tee_podr2_pk
-    pub async fn query_tee_podr2_pk(&self) -> Result<[u8; 270]> {
+    pub async fn query_tee_podr2_pk(&self) -> Result<Option<[u8; 270]>> {
         let query = tee_worker_storage().tee_podr2_pk();
 
         let result = query_storage(&query).await;
@@ -61,7 +61,7 @@ impl Sdk {
     }
 
     // query_mr_enclave_whitelist
-    pub async fn query_mr_enclave_whitelist(&self) -> Result<BoundedVec<[u8; 64]>> {
+    pub async fn query_mr_enclave_whitelist(&self) -> Result<Option<BoundedVec<[u8; 64]>>> {
         let query = tee_worker_storage().mr_enclave_whitelist();
 
         let result = query_storage(&query).await;

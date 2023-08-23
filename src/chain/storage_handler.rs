@@ -26,7 +26,7 @@ fn storage_handler_tx() -> TransactionApi {
 impl Sdk {
     /* Query functions */
     // query_user_owned_space
-    pub async fn query_user_owned_space(&self, pk: &[u8]) -> Result<OwnedSpaceDetails> {
+    pub async fn query_user_owned_space(&self, pk: &[u8]) -> Result<Option<OwnedSpaceDetails>> {
         let account = account_from_slice(pk);
         let query = storage_handler_storage().user_owned_space(&account);
 
@@ -38,7 +38,7 @@ impl Sdk {
     }
 
     // query_unit_price
-    pub async fn query_unit_price(&self) -> Result<u128> {
+    pub async fn query_unit_price(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().unit_price();
 
         let result = query_storage(&query).await;
@@ -49,7 +49,7 @@ impl Sdk {
     }
 
     // query_total_power
-    pub async fn query_total_power(&self) -> Result<u128> {
+    pub async fn query_total_power(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().total_idle_space();
 
         let result = query_storage(&query).await;
@@ -60,7 +60,7 @@ impl Sdk {
     }
 
     // query_total_space
-    pub async fn query_total_space(&self) -> Result<u128> {
+    pub async fn query_total_space(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().total_service_space();
 
         let result = query_storage(&query).await;
@@ -71,7 +71,7 @@ impl Sdk {
     }
 
     // query_purchased_space
-    pub async fn query_purchased_space(&self) -> Result<u128> {
+    pub async fn query_purchased_space(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().purchased_space();
 
         let result = query_storage(&query).await;

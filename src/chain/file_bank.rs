@@ -37,7 +37,7 @@ fn file_bank_tx() -> TransactionApi {
 impl Sdk {
     /* Query functions */
     // query_storage_order
-    pub async fn query_storage_order(&self, root_hash: &str) -> Result<DealInfo> {
+    pub async fn query_storage_order(&self, root_hash: &str) -> Result<Option<DealInfo>> {
         let hash = hash_from_string(root_hash);
         let query = file_bank_storage().deal_map(hash);
 
@@ -49,7 +49,7 @@ impl Sdk {
     }
 
     // query_file_metadata
-    pub async fn query_file_metadata(&self, root_hash: &str) -> Result<FileInfo> {
+    pub async fn query_file_metadata(&self, root_hash: &str) -> Result<Option<FileInfo>> {
         let hash = hash_from_string(root_hash);
         let query = file_bank_storage().file(hash);
 
@@ -64,7 +64,7 @@ impl Sdk {
     pub async fn query_user_hold_file_list(
         &self,
         pk: &[u8],
-    ) -> Result<BoundedVec<UserFileSliceInfo>> {
+    ) -> Result<Option<BoundedVec<UserFileSliceInfo>>> {
         let account = account_from_slice(pk);
 
         let query = file_bank_storage().user_hold_file_list(&account);
@@ -78,7 +78,7 @@ impl Sdk {
     }
 
     // query_pending_replacements
-    pub async fn query_pending_replacements(&self, pk: &[u8]) -> Result<u128> {
+    pub async fn query_pending_replacements(&self, pk: &[u8]) -> Result<Option<u128>> {
         let account = account_from_slice(pk);
 
         let query = file_bank_storage().pending_replacements(&account);
@@ -91,7 +91,11 @@ impl Sdk {
     }
 
     // query_bucket_info
-    pub async fn query_bucket_info(&self, pk: &[u8], bucket_name: &str) -> Result<BucketInfo> {
+    pub async fn query_bucket_info(
+        &self,
+        pk: &[u8],
+        bucket_name: &str,
+    ) -> Result<Option<BucketInfo>> {
         let account = account_from_slice(pk);
 
         let name_bytes: BoundedVec<u8> = BoundedVec(bucket_name.as_bytes().to_vec());
@@ -106,7 +110,10 @@ impl Sdk {
     }
 
     // query_user_bucket_list
-    pub async fn query_user_bucket_list(&self, pk: &[u8]) -> Result<BoundedVec<BoundedVec<u8>>> {
+    pub async fn query_user_bucket_list(
+        &self,
+        pk: &[u8],
+    ) -> Result<Option<BoundedVec<BoundedVec<u8>>>> {
         let account = account_from_slice(pk);
 
         let query = file_bank_storage().user_bucket_list(&account);
@@ -122,12 +129,16 @@ impl Sdk {
     pub async fn query_all_bucket_name(&self, pk: &[u8]) -> Result<Vec<String>> {
         match self.query_user_bucket_list(pk).await {
             Ok(bucketlist) => {
-                let buckets: Vec<String> = bucketlist
-                    .0
-                    .iter()
-                    .map(|v| String::from_utf8_lossy(&v.0).to_string())
-                    .collect();
-                Ok(buckets)
+                if let Some(bucketlist) = bucketlist {
+                    let buckets: Vec<String> = bucketlist
+                        .0
+                        .iter()
+                        .map(|v| String::from_utf8_lossy(&v.0).to_string())
+                        .collect();
+                    Ok(buckets)
+                } else {
+                    Ok(vec![])
+                }
             }
             Err(e) => {
                 bail!("{}", e);
@@ -136,7 +147,7 @@ impl Sdk {
     }
 
     // query_restoral_order
-    pub async fn query_restoral_order(&self, hash: &str) -> Result<RestoralOrderInfo> {
+    pub async fn query_restoral_order(&self, hash: &str) -> Result<Option<RestoralOrderInfo>> {
         let hash = hash_from_string(hash);
 
         let query = file_bank_storage().restoral_order(&hash);
@@ -149,7 +160,7 @@ impl Sdk {
     }
 
     // query_clear_user_list
-    pub async fn query_clear_user_list(&self) -> Result<BoundedVec<AccountId32>> {
+    pub async fn query_clear_user_list(&self) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = file_bank_storage().clear_user_list();
 
         let result = query_storage(&query).await;
@@ -451,8 +462,10 @@ mod test {
 
     const PUB_KEY: &str = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
 
+    const BUCKET_NAME: &str = "SampleBucket";
+
     fn init_sdk() -> Sdk {
-        Sdk::new(MNEMONIC, "service_name",  true)
+        Sdk::new(MNEMONIC, "service_name")
     }
 
     #[tokio::test]
@@ -519,8 +532,7 @@ mod test {
     async fn test_query_bucket_info() {
         let sdk = init_sdk();
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
-        let name = "MyFirstBucket";
-        let result = sdk.query_bucket_info(&pk_bytes, name).await;
+        let result = sdk.query_bucket_info(&pk_bytes, BUCKET_NAME).await;
         match result {
             Ok(_) => {
                 assert!(true);
@@ -594,8 +606,7 @@ mod test {
     async fn test_create_bucket() {
         let sdk = init_sdk();
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
-        let name = "MyFirstBucket";
-        let result = sdk.create_bucket(&pk_bytes, name).await;
+        let result = sdk.create_bucket(&pk_bytes, BUCKET_NAME).await;
         match result {
             Ok(_) => {
                 assert!(true);
@@ -611,8 +622,7 @@ mod test {
     async fn test_delete_bucket() {
         let sdk = init_sdk();
         let pk_bytes = hex::decode(PUB_KEY).unwrap();
-        let name = "MyFirstBucket";
-        let result = sdk.delete_bucket(&pk_bytes, name).await;
+        let result = sdk.delete_bucket(&pk_bytes, BUCKET_NAME).await;
         match result {
             Ok(_) => {
                 assert!(true);

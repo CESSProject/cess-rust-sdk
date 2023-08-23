@@ -2,17 +2,17 @@ use super::Sdk;
 use crate::core::erasure::{read_solomon_restore, reed_solomon};
 use crate::core::hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash};
 use crate::core::pattern::{SegmentDataInfo, PUBLIC_DEOSS, PUBLIC_DEOSS_ACCOUNT, SEGMENT_SIZE};
+use crate::core::utils;
 use crate::core::utils::account::parsing_public_key;
 use crate::core::utils::bucket::check_bucket_name;
 use crate::core::utils::hash::calc_sha256;
 use crate::core::utils::str::get_random_code;
-use crate::core::utils;
 use crate::polkadot;
 use crate::utils::account_from_slice;
 use anyhow::{anyhow, bail, Result};
 use base58::ToBase58;
-use reqwest::{Client, RequestBuilder};
 use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{Client, RequestBuilder};
 use std::fs::{self, File};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -175,7 +175,7 @@ impl Sdk {
         headers.insert("Message", HeaderValue::from_str(&message)?);
         headers.insert("Signature", HeaderValue::from_str(&sig.0.to_base58())?);
 
-        let client = match Client::builder().build(){
+        let client = match Client::builder().build() {
             Ok(client) => client,
             Err(err) => {
                 bail!("{}", err)
@@ -187,9 +187,7 @@ impl Sdk {
         let mut file_content = Vec::new();
         file.read_to_end(&mut file_content)?;
 
-        let response = request_builder
-            .body(file_content)
-            .send().await?;
+        let response = request_builder.body(file_content).send().await?;
         let status_code = response.status();
         let response_text = response.text().await?;
         if !status_code.is_success() {
@@ -255,22 +253,27 @@ impl Sdk {
         Ok(())
     }
 
-    pub async fn query_assigned_miner_peer_id(&self, miner_task_list: Vec<MinerTaskList>) -> Result<Vec<PeerId>> {
+    pub async fn query_assigned_miner_peer_id(
+        &self,
+        miner_task_list: Vec<MinerTaskList>,
+    ) -> Result<Vec<PeerId>> {
         let mut peer_ids = Vec::new();
 
         for v in miner_task_list {
             let pk = &v.miner.0;
             let miner_info = match self.query_miner_items(pk).await {
-                Ok(miner_info) => miner_info,
+                Ok(value) => value,
                 Err(err) => bail!(err),
             };
 
-            let peer_id = match PeerId::from_bytes(&miner_info.peer_id){
-                Ok(peer_id) => peer_id,
-                Err(err) => bail!(err),
-            };
+            if let Some(miner_info) = miner_info {
+                let peer_id = match PeerId::from_bytes(&miner_info.peer_id) {
+                    Ok(peer_id) => peer_id,
+                    Err(err) => bail!(err),
+                };
 
-            peer_ids.push(peer_id);
+                peer_ids.push(peer_id);
+            }
         }
 
         Ok(peer_ids)
@@ -338,30 +341,31 @@ fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
 #[cfg(test)]
 mod test {
     use crate::{chain::Sdk, core::pattern::PUBLIC_DEOSS};
-    
+
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
 
     const PUB_KEY: &str = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
 
     fn init_sdk() -> Sdk {
-        Sdk::new(MNEMONIC, "service_name",  true)
+        Sdk::new(MNEMONIC, "service_name")
     }
 
     #[tokio::test]
     async fn test_store_file() {
         let sdk = init_sdk();
-        let result = sdk.store_file("/home/thgy/work/cess-rust-sdk/README.md", "SampleBucket").await;
+        let result = sdk.store_file("README.md", "MyFirstBucket").await;
         println!("{:?}", result);
     }
 
     #[tokio::test]
     async fn test_download_from_gateway() {
         let sdk = init_sdk();
-        let path = "/home/thgy/work/cess-rust-sdk/";
-        let root_hash = "8d91b840beefb6fe9c852863ef279f8173058a6dbad66b687c5e05c17c04d137";
-        let result = sdk.download_from_gateway(PUBLIC_DEOSS,root_hash, path).await;
+        let path = "/tmp";
+        let root_hash = "5b476ba750c0da1ec2392a0819384b2b3348f032e118578f6e13c41a57c9ec6f";
+        let result = sdk
+            .download_from_gateway(PUBLIC_DEOSS, root_hash, path)
+            .await;
         println!("{:?}", result);
     }
-
 }

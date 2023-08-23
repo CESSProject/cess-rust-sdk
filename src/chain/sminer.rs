@@ -31,7 +31,7 @@ fn sminer_tx() -> TransactionApi {
 impl Sdk {
     /* Query functions */
     // query_miner_lock_in
-    pub async fn query_miner_lock_in(&self, pk: &[u8]) -> Result<u32> {
+    pub async fn query_miner_lock_in(&self, pk: &[u8]) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().miner_lock_in(&account);
@@ -44,7 +44,7 @@ impl Sdk {
     }
 
     // query_miner_items
-    pub async fn query_miner_items(&self, pk: &[u8]) -> Result<MinerInfo> {
+    pub async fn query_miner_items(&self, pk: &[u8]) -> Result<Option<MinerInfo>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().miner_items(&account);
@@ -57,7 +57,7 @@ impl Sdk {
     }
 
     // query_all_miner
-    pub async fn query_all_miner(&self) -> Result<BoundedVec<AccountId32>> {
+    pub async fn query_all_miner(&self) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = sminer_storage().all_miner();
 
         let result = query_storage(&query).await;
@@ -68,7 +68,7 @@ impl Sdk {
     }
 
     // query_reward_map
-    pub async fn query_reward_map(&self, pk: &[u8]) -> Result<Reward> {
+    pub async fn query_reward_map(&self, pk: &[u8]) -> Result<Option<Reward>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().reward_map(&account);
@@ -81,7 +81,7 @@ impl Sdk {
     }
 
     // query_currency_reward
-    pub async fn query_currency_reward(&self) -> Result<u128> {
+    pub async fn query_currency_reward(&self) -> Result<Option<u128>> {
         let query = sminer_storage().currency_reward();
 
         let result = query_storage(&query).await;
@@ -92,7 +92,7 @@ impl Sdk {
     }
 
     // query_miner_public_key
-    pub async fn query_miner_public_key(&self, slice: [u8; 32]) -> Result<AccountId32> {
+    pub async fn query_miner_public_key(&self, slice: [u8; 32]) -> Result<Option<AccountId32>> {
         let query = sminer_storage().miner_public_key(slice);
 
         let result = query_storage(&query).await;
@@ -103,7 +103,7 @@ impl Sdk {
     }
 
     // query_expenders
-    pub async fn query_expenders(&self) -> Result<(u64, u64, u64)> {
+    pub async fn query_expenders(&self) -> Result<Option<(u64, u64, u64)>> {
         let query = sminer_storage().expenders();
 
         let result = query_storage(&query).await;
@@ -114,7 +114,7 @@ impl Sdk {
     }
 
     // query_miner_lock
-    pub async fn query_miner_lock(&self, pk: &[u8]) -> Result<u32> {
+    pub async fn query_miner_lock(&self, pk: &[u8]) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().miner_lock(&account);
@@ -130,7 +130,7 @@ impl Sdk {
     pub async fn query_restoral_target(
         &self,
         pk: &[u8],
-    ) -> Result<RestoralTargetInfo<AccountId32, u32>> {
+    ) -> Result<Option<RestoralTargetInfo<AccountId32, u32>>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().restoral_target(&account);

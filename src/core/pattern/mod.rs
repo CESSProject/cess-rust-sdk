@@ -7,10 +7,6 @@ pub const BLOCK_INTERVAL: Duration = Duration::from_secs(6);
 
 pub const MAX_SUBMITED_IDLE_FILE_META: usize = 30;
 
-pub const URL: &str = "wss://testnet-rpc0.cess.cloud:443/ws/";
-pub const PUBLIC_DEOSS: &str = "http://deoss-pub-gateway.cess.cloud/";
-pub const PUBLIC_DEOSS_ACCOUNT: &str = "cXhwBytXqrZLr1qM5NHJhCzEMckSTzNKw17ci2aHft6ETSQm9";
-
 pub const MIN_BUCKET_NAME_LENGTH: usize = 3;
 pub const MAX_BUCKET_NAME_LENGHT: usize = 63;
 

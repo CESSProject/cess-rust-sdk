@@ -99,7 +99,7 @@ pub fn verify_address(address: &str, prefix: &[u8]) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use crate::{core::pattern::PUBLIC_DEOSS_ACCOUNT, utils::account_from_slice};
+    use crate::{config::PUBLIC_DEOSS_ACCOUNT, utils::account_from_slice};
 
     use super::parsing_public_key;
 

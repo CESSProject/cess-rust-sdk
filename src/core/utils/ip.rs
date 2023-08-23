@@ -28,7 +28,9 @@ pub fn parse_multiaddrs(domain: &str) -> Result<Vec<String>> {
                 }
             }
         }
-        Err(_) => {}
+        Err(err) => {
+            bail!("Failed to parse '{}' as a valid Multiaddr: {}", domain, err)
+        }
     }
 
     let resolver = Resolver::new(ResolverConfig::default(), ResolverOpts::default())?;

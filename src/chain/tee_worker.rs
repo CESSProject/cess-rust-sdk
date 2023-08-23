@@ -1,10 +1,11 @@
-use super::Sdk;
+use super::ChainSdk;
 use crate::polkadot;
 use crate::utils::{
     account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};
+use async_trait::async_trait;
 use polkadot::{
     runtime_types::{
         pallet_tee_worker::types::{SgxAttestationReport, TeeWorkerInfo},
@@ -23,57 +24,60 @@ fn tee_worker_tx() -> TransactionApi {
     polkadot::tx().tee_worker()
 }
 
-impl Sdk {
+#[async_trait]
+pub trait TeeWorker {
+    async fn query_tee_worker_map(&self, pk: &[u8]) -> Result<Option<TeeWorkerInfo>>;
+    async fn query_bond_acc(&self) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_tee_podr2_pk(&self) -> Result<Option<[u8; 270]>>;
+    async fn query_mr_enclave_whitelist(&self) -> Result<Option<BoundedVec<[u8; 64]>>>;
+    async fn register_tee_worker(
+        &self,
+        stash_account: &[u8],
+        node_key: ed25519Public,
+        peer_id: [u8; 38],
+        podr2_pbk: [u8; 270],
+        sgx_attestation_report: SgxAttestationReport,
+    ) -> Result<String>;
+    async fn update_whitelist(&self, mr_enclave: [u8; 64]) -> Result<String>;
+    async fn exit(&self) -> Result<(String, Exit)>;
+}
+
+#[async_trait]
+impl TeeWorker for ChainSdk {
     /* Query functions */
 
     // query_tee_worker_map
-    pub async fn query_tee_worker_map(&self, pk: &[u8]) -> Result<Option<TeeWorkerInfo>> {
+    async fn query_tee_worker_map(&self, pk: &[u8]) -> Result<Option<TeeWorkerInfo>> {
         let account = account_from_slice(pk);
         let query = tee_worker_storage().tee_worker_map(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_bond_acc
-    pub async fn query_bond_acc(&self) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_bond_acc(&self) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = tee_worker_storage().bond_acc();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_tee_podr2_pk
-    pub async fn query_tee_podr2_pk(&self) -> Result<Option<[u8; 270]>> {
+    async fn query_tee_podr2_pk(&self) -> Result<Option<[u8; 270]>> {
         let query = tee_worker_storage().tee_podr2_pk();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_mr_enclave_whitelist
-    pub async fn query_mr_enclave_whitelist(&self) -> Result<Option<BoundedVec<[u8; 64]>>> {
+    async fn query_mr_enclave_whitelist(&self) -> Result<Option<BoundedVec<[u8; 64]>>> {
         let query = tee_worker_storage().mr_enclave_whitelist();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
     /* Transactional functions */
 
     // register
-    pub async fn register_tee_worker(
+    async fn register_tee_worker(
         &self,
         stash_account: &[u8],
         node_key: ed25519Public,
@@ -96,14 +100,14 @@ impl Sdk {
     }
 
     // update_whitelist
-    pub async fn update_whitelist(&self, mr_enclave: [u8; 64]) -> Result<String> {
+    async fn update_whitelist(&self, mr_enclave: [u8; 64]) -> Result<String> {
         let tx = tee_worker_tx().update_whitelist(mr_enclave);
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
 
         Ok(hash.to_string())
     }
-    pub async fn exit(&self) -> Result<(String, Exit)> {
+    async fn exit(&self) -> Result<(String, Exit)> {
         let tx = tee_worker_tx().exit();
         let from = PairSigner::new(self.pair.clone());
         let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;

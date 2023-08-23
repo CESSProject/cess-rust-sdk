@@ -1,10 +1,11 @@
-use super::Sdk;
+use super::ChainSdk;
 use crate::polkadot;
 use crate::utils::{
     account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};
+use async_trait::async_trait;
 use polkadot::{
     oss::{calls::TransactionApi, events::Authorize, storage::StorageApi},
     runtime_types::sp_core::bounded::bounded_vec::BoundedVec,
@@ -20,39 +21,43 @@ fn oss_tx() -> TransactionApi {
     polkadot::tx().oss()
 }
 
-impl Sdk {
+#[async_trait]
+pub trait DeOss {
+    async fn query_authority_list(&self, pk: &[u8]) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn oss(&self, pk: &[u8]) -> Result<Option<[u8; 38]>>;
+    async fn authorize(&self, pk: &[u8]) -> Result<(String, Authorize)>;
+    async fn cancel_authorize(&self, pk: &[u8]) -> Result<String>;
+    async fn register_deoss(&self, endpoint: [u8; 38]) -> Result<String>;
+    async fn update(&self, endpoint: [u8; 38]) -> Result<String>;
+    async fn destroy(&self) -> Result<String>;
+}
+
+#[async_trait]
+impl DeOss for ChainSdk {
     /* Query functions */
 
     // query_authority_list
-    pub async fn query_authority_list(&self, pk: &[u8]) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_authority_list(&self, pk: &[u8]) -> Result<Option<BoundedVec<AccountId32>>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().authority_list(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // oss
-    pub async fn oss(&self, pk: &[u8]) -> Result<Option<[u8; 38]>> {
+    async fn oss(&self, pk: &[u8]) -> Result<Option<[u8; 38]>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().oss(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     /* Transactional functions */
 
     // authorize
-    pub async fn authorize(&self, pk: &[u8]) -> Result<(String, Authorize)> {
+    async fn authorize(&self, pk: &[u8]) -> Result<(String, Authorize)> {
         let account = account_from_slice(pk);
 
         let tx = oss_tx().authorize(account);
@@ -69,7 +74,7 @@ impl Sdk {
         }
     }
 
-    pub async fn cancel_authorize(&self, pk: &[u8]) -> Result<String> {
+    async fn cancel_authorize(&self, pk: &[u8]) -> Result<String> {
         let account = account_from_slice(pk);
         let tx = oss_tx().cancel_authorize(account);
 
@@ -79,7 +84,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn register_deoss(&self, endpoint: [u8; 38]) -> Result<String> {
+    async fn register_deoss(&self, endpoint: [u8; 38]) -> Result<String> {
         let tx = oss_tx().register(endpoint);
 
         let from = PairSigner::new(self.pair.clone());
@@ -88,7 +93,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn update(&self, endpoint: [u8; 38]) -> Result<String> {
+    async fn update(&self, endpoint: [u8; 38]) -> Result<String> {
         let tx = oss_tx().update(endpoint);
 
         let from = PairSigner::new(self.pair.clone());
@@ -97,7 +102,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn destroy(&self) -> Result<String> {
+    async fn destroy(&self) -> Result<String> {
         let tx = oss_tx().destroy();
 
         let from = PairSigner::new(self.pair.clone());

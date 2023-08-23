@@ -1,10 +1,11 @@
-use super::Sdk;
+use super::ChainSdk;
 use crate::polkadot;
 use crate::utils::{
     account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};
+use async_trait::async_trait;
 use polkadot::{
     runtime_types::{
         cp_cess_common::PoISKey,
@@ -28,106 +29,107 @@ fn sminer_tx() -> TransactionApi {
     polkadot::tx().sminer()
 }
 
-impl Sdk {
+#[async_trait]
+pub trait SMiner {
+    async fn query_miner_lock_in(&self, pk: &[u8]) -> Result<Option<u32>>;
+    async fn query_miner_items(&self, pk: &[u8]) -> Result<Option<MinerInfo>>;
+    async fn query_all_miner(&self) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_reward_map(&self, pk: &[u8]) -> Result<Option<Reward>>;
+    async fn query_currency_reward(&self) -> Result<Option<u128>>;
+    async fn query_miner_public_key(&self, slice: [u8; 32]) -> Result<Option<AccountId32>>;
+    async fn query_expenders(&self) -> Result<Option<(u64, u64, u64)>>;
+    async fn query_miner_lock(&self, pk: &[u8]) -> Result<Option<u32>>;
+    async fn query_restoral_target(
+        &self,
+        pk: &[u8],
+    ) -> Result<Option<RestoralTargetInfo<AccountId32, u32>>>;
+    async fn regnstk(
+        &self,
+        beneficiary: &[u8],
+        peer_id: [u8; 38],
+        staking_val: u128,
+        pois_key: PoISKey,
+        tee_sig: [u8; 256],
+    ) -> Result<String>;
+    async fn increase_collateral(&self, collaterals: u128) -> Result<(String, IncreaseCollateral)>;
+    async fn update_beneficiary(&self, beneficiary: &[u8]) -> Result<String>;
+    async fn update_peer_id(&self, peer_id: [u8; 38]) -> Result<String>;
+    async fn receive_reward(&self) -> Result<String>;
+    async fn miner_exit_prep(&self) -> Result<(String, MinerExitPrep)>;
+    async fn miner_exit(&self, miner: &[u8]) -> Result<String>;
+    async fn miner_withdraw(&self) -> Result<String>;
+    async fn update_expender(&self, k: u64, n: u64, d: u64) -> Result<String>;
+}
+
+#[async_trait]
+impl SMiner for ChainSdk {
     /* Query functions */
     // query_miner_lock_in
-    pub async fn query_miner_lock_in(&self, pk: &[u8]) -> Result<Option<u32>> {
+    async fn query_miner_lock_in(&self, pk: &[u8]) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().miner_lock_in(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_miner_items
-    pub async fn query_miner_items(&self, pk: &[u8]) -> Result<Option<MinerInfo>> {
+    async fn query_miner_items(&self, pk: &[u8]) -> Result<Option<MinerInfo>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().miner_items(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_all_miner
-    pub async fn query_all_miner(&self) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_all_miner(&self) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = sminer_storage().all_miner();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_reward_map
-    pub async fn query_reward_map(&self, pk: &[u8]) -> Result<Option<Reward>> {
+    async fn query_reward_map(&self, pk: &[u8]) -> Result<Option<Reward>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().reward_map(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_currency_reward
-    pub async fn query_currency_reward(&self) -> Result<Option<u128>> {
+    async fn query_currency_reward(&self) -> Result<Option<u128>> {
         let query = sminer_storage().currency_reward();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_miner_public_key
-    pub async fn query_miner_public_key(&self, slice: [u8; 32]) -> Result<Option<AccountId32>> {
+    async fn query_miner_public_key(&self, slice: [u8; 32]) -> Result<Option<AccountId32>> {
         let query = sminer_storage().miner_public_key(slice);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_expenders
-    pub async fn query_expenders(&self) -> Result<Option<(u64, u64, u64)>> {
+    async fn query_expenders(&self) -> Result<Option<(u64, u64, u64)>> {
         let query = sminer_storage().expenders();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_miner_lock
-    pub async fn query_miner_lock(&self, pk: &[u8]) -> Result<Option<u32>> {
+    async fn query_miner_lock(&self, pk: &[u8]) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().miner_lock(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_restoral_target
-    pub async fn query_restoral_target(
+    async fn query_restoral_target(
         &self,
         pk: &[u8],
     ) -> Result<Option<RestoralTargetInfo<AccountId32, u32>>> {
@@ -135,16 +137,12 @@ impl Sdk {
 
         let query = sminer_storage().restoral_target(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     /* Transactional functions */
     // regnstk
-    pub async fn regnstk(
+    async fn regnstk(
         &self,
         beneficiary: &[u8],
         peer_id: [u8; 38],
@@ -163,10 +161,7 @@ impl Sdk {
     }
 
     // increase_collateral
-    pub async fn increase_collateral(
-        &self,
-        collaterals: u128,
-    ) -> Result<(String, IncreaseCollateral)> {
+    async fn increase_collateral(&self, collaterals: u128) -> Result<(String, IncreaseCollateral)> {
         let tx = sminer_tx().increase_collateral(collaterals);
 
         let from = PairSigner::new(self.pair.clone());
@@ -182,7 +177,7 @@ impl Sdk {
     }
 
     // update_beneficiary
-    pub async fn update_beneficiary(&self, beneficiary: &[u8]) -> Result<String> {
+    async fn update_beneficiary(&self, beneficiary: &[u8]) -> Result<String> {
         let account = account_from_slice(beneficiary);
 
         let tx = sminer_tx().update_beneficiary(account);
@@ -193,7 +188,7 @@ impl Sdk {
     }
 
     // update_peer_id
-    pub async fn update_peer_id(&self, peer_id: [u8; 38]) -> Result<String> {
+    async fn update_peer_id(&self, peer_id: [u8; 38]) -> Result<String> {
         let tx = sminer_tx().update_peer_id(peer_id);
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
@@ -202,7 +197,7 @@ impl Sdk {
     }
 
     // receive_reward
-    pub async fn receive_reward(&self) -> Result<String> {
+    async fn receive_reward(&self) -> Result<String> {
         let tx = sminer_tx().receive_reward();
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
@@ -210,7 +205,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn miner_exit_prep(&self) -> Result<(String, MinerExitPrep)> {
+    async fn miner_exit_prep(&self) -> Result<(String, MinerExitPrep)> {
         let tx = sminer_tx().miner_exit_prep();
 
         let from = PairSigner::new(self.pair.clone());
@@ -225,7 +220,7 @@ impl Sdk {
         }
     }
 
-    pub async fn miner_exit(&self, miner: &[u8]) -> Result<String> {
+    async fn miner_exit(&self, miner: &[u8]) -> Result<String> {
         let account = account_from_slice(miner);
 
         let tx = sminer_tx().miner_exit(account);
@@ -236,7 +231,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn miner_withdraw(&self) -> Result<String> {
+    async fn miner_withdraw(&self) -> Result<String> {
         let tx = sminer_tx().miner_withdraw();
 
         let from = PairSigner::new(self.pair.clone());
@@ -246,7 +241,7 @@ impl Sdk {
         Ok(hash.to_string())
     }
 
-    pub async fn update_expender(&self, k: u64, n: u64, d: u64) -> Result<String> {
+    async fn update_expender(&self, k: u64, n: u64, d: u64) -> Result<String> {
         let tx = sminer_tx().update_expender(k, n, d);
 
         let from = PairSigner::new(self.pair.clone());

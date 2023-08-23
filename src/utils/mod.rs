@@ -3,14 +3,13 @@ use anyhow::{anyhow, bail, Result};
 use subxt::{
     blocks::ExtrinsicEvents,
     config::ExtrinsicParams,
-    runtime_api::RuntimeApiPayload,
     storage::{address::Yes, StorageAddress},
     tx::{Signer as SignerT, TxPayload},
     utils::{AccountId32, H256},
     Config, PolkadotConfig,
 };
 
-use crate::{core::pattern::URL, init_api, polkadot};
+use crate::{config::URL, init_api, polkadot};
 use polkadot::runtime_types::cp_cess_common::Hash;
 
 pub fn hex_string_to_bytes(hex: &str) -> [u8; 64] {
@@ -48,19 +47,6 @@ where
         },
         Err(e) => {
             bail!("Failed to fetch data from storage: {}", e);
-        }
-    }
-}
-
-pub(crate) async fn runtime_api_call<Call: RuntimeApiPayload>(
-    payload: Call,
-) -> Result<Call::ReturnType> {
-    let api = init_api(URL).await;
-
-    match api.runtime_api().at_latest().await?.call(payload).await {
-        Ok(result) => Ok(result),
-        Err(err) => {
-            bail!("Error: {}", err)
         }
     }
 }

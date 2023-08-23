@@ -1,10 +1,11 @@
-use super::Sdk;
+use super::ChainSdk;
 use crate::polkadot;
 use crate::utils::{
     account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};
+use async_trait::async_trait;
 use polkadot::{
     audit::{
         calls::TransactionApi,
@@ -30,129 +31,150 @@ fn audit_tx() -> TransactionApi {
     polkadot::tx().audit()
 }
 
-impl Sdk {
+#[async_trait]
+pub trait Audit {
+    async fn query_challenge_duration(&self) -> Result<Option<u32>>;
+    async fn query_verify_duration(&self) -> Result<Option<u32>>;
+    async fn query_cur_authority_index(&self) -> Result<Option<u16>>;
+    async fn query_keys(&self) -> Result<Option<WeakBoundedVec<Public>>>;
+    async fn query_challenge_proposal(
+        &self,
+        slice: &[u8; 32],
+    ) -> Result<Option<(u32, ChallengeInfo)>>;
+    async fn query_challenge_snapshot(&self) -> Result<Option<ChallengeInfo>>;
+    async fn query_counted_idle_failed(&self, pk: &[u8]) -> Result<Option<u32>>;
+    async fn query_counted_service_failed(&self, pk: &[u8]) -> Result<Option<u32>>;
+    async fn query_counted_clear(&self, pk: &[u8]) -> Result<Option<u8>>;
+    async fn query_challenge_era(&self) -> Result<Option<u32>>;
+    async fn query_unverify_idle_proof(
+        &self,
+        pk: &[u8],
+    ) -> Result<Option<BoundedVec<IdleProveInfo>>>;
+    async fn query_unverify_service_proof(
+        &self,
+        pk: &[u8],
+    ) -> Result<Option<BoundedVec<ServiceProveInfo>>>;
+    async fn query_verify_result(&self, pk: &[u8]) -> Result<Option<(Option<bool>, Option<bool>)>>;
+    async fn query_lock(&self) -> Result<Option<bool>>;
+    async fn query_verify_reassign_count(&self) -> Result<Option<u8>>;
+    async fn save_challenge_info(
+        &self,
+        challenge_info: ChallengeInfo,
+        key: Public,
+        seg_digest: SegDigest<u32>,
+        signature: Signature,
+    ) -> Result<String>;
+    async fn submit_idle_proof(
+        &self,
+        idle_prove: BoundedVec<u8>,
+    ) -> Result<(String, SubmitIdleProof)>;
+    async fn submit_service_proof(
+        &self,
+        service_prove: BoundedVec<u8>,
+    ) -> Result<(String, SubmitServiceProof)>;
+    async fn submit_verify_idle_result(
+        &self,
+        total_prove_hash: BoundedVec<u8>,
+        front: u64,
+        rear: u64,
+        accumulator: &[u8; 256],
+        idle_result: bool,
+        signature: &[u8; 256],
+        tee_acc: &[u8],
+    ) -> Result<String>;
+    async fn submit_verify_service_result(
+        &self,
+        service_result: bool,
+        signature: &[u8; 256],
+        service_bloom_filter: BloomFilter,
+        miner: &[u8],
+    ) -> Result<String>;
+}
+
+#[async_trait]
+impl Audit for ChainSdk {
     /* Query functions */
     // query_challenge_duration
-    pub async fn query_challenge_duration(&self) -> Result<Option<u32>> {
+    async fn query_challenge_duration(&self) -> Result<Option<u32>> {
         let query = audit_storage().challenge_duration();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_verify_duration
-    pub async fn query_verify_duration(&self) -> Result<Option<u32>> {
+    async fn query_verify_duration(&self) -> Result<Option<u32>> {
         let query = audit_storage().verify_duration();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_cur_authority_index
-    pub async fn query_cur_authority_index(&self) -> Result<Option<u16>> {
+    async fn query_cur_authority_index(&self) -> Result<Option<u16>> {
         let query = audit_storage().cur_authority_index();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_keys
-    pub async fn query_keys(&self) -> Result<Option<WeakBoundedVec<Public>>> {
+    async fn query_keys(&self) -> Result<Option<WeakBoundedVec<Public>>> {
         let query = audit_storage().keys();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_challenge_proposal
-    pub async fn query_challenge_proposal(
+    async fn query_challenge_proposal(
         &self,
         slice: &[u8; 32],
     ) -> Result<Option<(u32, ChallengeInfo)>> {
         let query = audit_storage().challenge_proposal(slice);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_challenge_snapshot
-    pub async fn query_challenge_snapshot(&self) -> Result<Option<ChallengeInfo>> {
+    async fn query_challenge_snapshot(&self) -> Result<Option<ChallengeInfo>> {
         let query = audit_storage().challenge_snap_shot();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_counted_idle_failed
-    pub async fn query_counted_idle_failed(&self, pk: &[u8]) -> Result<Option<u32>> {
+    async fn query_counted_idle_failed(&self, pk: &[u8]) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().counted_idle_failed(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_counted_service_failed
-    pub async fn query_counted_service_failed(&self, pk: &[u8]) -> Result<Option<u32>> {
+    async fn query_counted_service_failed(&self, pk: &[u8]) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().counted_service_failed(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_counted_clear
-    pub async fn query_counted_clear(&self, pk: &[u8]) -> Result<Option<u8>> {
+    async fn query_counted_clear(&self, pk: &[u8]) -> Result<Option<u8>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().counted_clear(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_challenge_era
-    pub async fn query_challenge_era(&self) -> Result<Option<u32>> {
+    async fn query_challenge_era(&self) -> Result<Option<u32>> {
         let query = audit_storage().challenge_era();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_unverify_idle_proof
-    pub async fn query_unverify_idle_proof(
+    async fn query_unverify_idle_proof(
         &self,
         pk: &[u8],
     ) -> Result<Option<BoundedVec<IdleProveInfo>>> {
@@ -160,15 +182,11 @@ impl Sdk {
 
         let query = audit_storage().unverify_idle_proof(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_unverify_service_proof
-    pub async fn query_unverify_service_proof(
+    async fn query_unverify_service_proof(
         &self,
         pk: &[u8],
     ) -> Result<Option<BoundedVec<ServiceProveInfo>>> {
@@ -176,55 +194,36 @@ impl Sdk {
 
         let query = audit_storage().unverify_service_proof(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_verify_result
-    pub async fn query_verify_result(
-        &self,
-        pk: &[u8],
-    ) -> Result<Option<(Option<bool>, Option<bool>)>> {
+    async fn query_verify_result(&self, pk: &[u8]) -> Result<Option<(Option<bool>, Option<bool>)>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().verify_result(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_lock
-    pub async fn query_lock(&self) -> Result<Option<bool>> {
+    async fn query_lock(&self) -> Result<Option<bool>> {
         let query = audit_storage().lock();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_verify_reassign_count
-    pub async fn query_verify_reassign_count(&self) -> Result<Option<u8>> {
+    async fn query_verify_reassign_count(&self) -> Result<Option<u8>> {
         let query = audit_storage().verify_reassign_count();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     /* Transactional functions */
 
     // save_challenge_info
-    pub async fn save_challenge_info(
+    async fn save_challenge_info(
         &self,
         challenge_info: ChallengeInfo,
         key: Public,
@@ -241,7 +240,7 @@ impl Sdk {
     }
 
     // submit_idle_proof
-    pub async fn submit_idle_proof(
+    async fn submit_idle_proof(
         &self,
         idle_prove: BoundedVec<u8>,
     ) -> Result<(String, SubmitIdleProof)> {
@@ -260,7 +259,7 @@ impl Sdk {
     }
 
     // submit_service_proof
-    pub async fn submit_service_proof(
+    async fn submit_service_proof(
         &self,
         service_prove: BoundedVec<u8>,
     ) -> Result<(String, SubmitServiceProof)> {
@@ -279,7 +278,7 @@ impl Sdk {
     }
 
     // submit_verify_idle_result
-    pub async fn submit_verify_idle_result(
+    async fn submit_verify_idle_result(
         &self,
         total_prove_hash: BoundedVec<u8>,
         front: u64,
@@ -308,7 +307,7 @@ impl Sdk {
     }
 
     // submit_verify_service_result
-    pub async fn submit_verify_service_result(
+    async fn submit_verify_service_result(
         &self,
         service_result: bool,
         signature: &[u8; 256],

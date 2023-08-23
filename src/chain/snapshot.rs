@@ -1,11 +1,18 @@
-// use crate::chain::audit;
-use super::Sdk;
+use super::audit::Audit;
+use super::ChainSdk;
 use crate::core::pattern::ChallengeInfo;
 use crate::utils::account_from_slice;
 use anyhow::Result;
+use async_trait::async_trait;
 
-impl Sdk {
-    pub async fn query_challenge(&self, pk: &[u8]) -> Result<ChallengeInfo> {
+#[async_trait]
+pub trait Snapshot {
+    async fn query_challenge(&self, pk: &[u8]) -> Result<ChallengeInfo>;
+}
+
+#[async_trait]
+impl Snapshot for ChainSdk {
+    async fn query_challenge(&self, pk: &[u8]) -> Result<ChallengeInfo> {
         let netinfo = self.query_challenge_snapshot().await?;
         let account = account_from_slice(pk);
 
@@ -25,24 +32,24 @@ impl Sdk {
                 }
             }
         }
-
         Ok(chal)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::chain::Sdk;
+    use super::Snapshot;
+    use crate::chain::ChainSdk;
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
 
-    fn init_sdk() -> Sdk {
-        Sdk::new(MNEMONIC, "service_name")
+    fn init_chain() -> ChainSdk {
+        ChainSdk::new(MNEMONIC, "service_name")
     }
 
     #[tokio::test]
     pub async fn test_query_challenge() {
-        let sdk = init_sdk();
+        let sdk = init_chain();
         let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let pk_bytes = hex::decode(pk).unwrap();
         let result = sdk.query_challenge(&pk_bytes).await;

@@ -1,6 +1,7 @@
 extern crate reed_solomon_erasure;
 
 pub mod chain;
+pub mod config;
 pub mod core;
 pub mod utils;
 pub use subxt::subxt;

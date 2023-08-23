@@ -1,10 +1,11 @@
-use super::Sdk;
+use super::ChainSdk;
 use crate::polkadot;
 use crate::utils::{
     account_from_slice, query_storage, sign_and_sbmit_tx_default,
     sign_and_submit_tx_then_watch_default,
 };
 use anyhow::{bail, Result};
+use async_trait::async_trait;
 use polkadot::{
     runtime_types::pallet_storage_handler::types::OwnedSpaceDetails,
     storage_handler::{
@@ -23,67 +24,61 @@ fn storage_handler_tx() -> TransactionApi {
     polkadot::tx().storage_handler()
 }
 
-impl Sdk {
+#[async_trait]
+pub trait StorageHandler {
+    async fn query_user_owned_space(&self, pk: &[u8]) -> Result<Option<OwnedSpaceDetails>>;
+    async fn query_unit_price(&self) -> Result<Option<u128>>;
+    async fn query_total_power(&self) -> Result<Option<u128>>;
+    async fn query_total_space(&self) -> Result<Option<u128>>;
+    async fn query_purchased_space(&self) -> Result<Option<u128>>;
+    async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)>;
+    async fn expansion_space(&self, gib_count: u32) -> Result<(String, ExpansionSpace)>;
+    async fn renewal_space(&self, days: u32) -> Result<(String, RenewalSpace)>;
+    async fn update_price(&self) -> Result<String>;
+}
+
+#[async_trait]
+impl StorageHandler for ChainSdk {
     /* Query functions */
     // query_user_owned_space
-    pub async fn query_user_owned_space(&self, pk: &[u8]) -> Result<Option<OwnedSpaceDetails>> {
+    async fn query_user_owned_space(&self, pk: &[u8]) -> Result<Option<OwnedSpaceDetails>> {
         let account = account_from_slice(pk);
         let query = storage_handler_storage().user_owned_space(&account);
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_unit_price
-    pub async fn query_unit_price(&self) -> Result<Option<u128>> {
+    async fn query_unit_price(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().unit_price();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_total_power
-    pub async fn query_total_power(&self) -> Result<Option<u128>> {
+    async fn query_total_power(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().total_idle_space();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_total_space
-    pub async fn query_total_space(&self) -> Result<Option<u128>> {
+    async fn query_total_space(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().total_service_space();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     // query_purchased_space
-    pub async fn query_purchased_space(&self) -> Result<Option<u128>> {
+    async fn query_purchased_space(&self) -> Result<Option<u128>> {
         let query = storage_handler_storage().purchased_space();
 
-        let result = query_storage(&query).await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(e) => Err(e),
-        }
+        query_storage(&query).await
     }
 
     /* Transactional functions */
 
-    pub async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)> {
+    async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)> {
         let tx = storage_handler_tx().buy_space(gib_count);
 
         let from = PairSigner::new(self.pair.clone());
@@ -98,7 +93,7 @@ impl Sdk {
         }
     }
 
-    pub async fn expansion_space(&self, gib_count: u32) -> Result<(String, ExpansionSpace)> {
+    async fn expansion_space(&self, gib_count: u32) -> Result<(String, ExpansionSpace)> {
         let tx = storage_handler_tx().expansion_space(gib_count);
 
         let from = PairSigner::new(self.pair.clone());
@@ -113,7 +108,7 @@ impl Sdk {
         }
     }
 
-    pub async fn renewal_space(&self, days: u32) -> Result<(String, RenewalSpace)> {
+    async fn renewal_space(&self, days: u32) -> Result<(String, RenewalSpace)> {
         let tx = storage_handler_tx().renewal_space(days);
 
         let from = PairSigner::new(self.pair.clone());
@@ -128,7 +123,7 @@ impl Sdk {
         }
     }
 
-    pub async fn update_price(&self) -> Result<String> {
+    async fn update_price(&self) -> Result<String> {
         let tx = storage_handler_tx().update_price();
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;

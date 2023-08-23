@@ -12,13 +12,13 @@ use subxt::ext::sp_core::Pair as sp_core_pair;
 
 use crate::core::utils::account::encode_public_key_as_cess_account;
 
-pub struct Sdk {
+pub struct ChainSdk {
     pair: Pair,
     name: String,
     signature_acc: String,
 }
 
-impl Sdk {
+impl ChainSdk {
     pub fn new(mnemonic: &str, service_name: &str) -> Self {
         let pair =
             <sp_keyring::sr25519::sr25519::Pair as sp_core_pair>::from_string(mnemonic, None)

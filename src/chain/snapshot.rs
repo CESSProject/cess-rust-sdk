@@ -39,7 +39,7 @@ impl Snapshot for ChainSdk {
 #[cfg(test)]
 mod test {
     use super::Snapshot;
-    use crate::chain::ChainSdk;
+    use crate::{chain::ChainSdk, core::utils::account::parsing_public_key};
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
 
@@ -50,8 +50,8 @@ mod test {
     #[tokio::test]
     pub async fn test_query_challenge() {
         let sdk = init_chain();
-        let pk = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
-        let pk_bytes = hex::decode(pk).unwrap();
+        let account_address = "cXjmuHdBk4J3Zyt2oGodwGegNFaTFPcfC48PZ9NMmcUFzF6cc";
+        let pk_bytes = parsing_public_key(account_address).unwrap();
         let result = sdk.query_challenge(&pk_bytes).await;
         match result {
             Ok(_) => {

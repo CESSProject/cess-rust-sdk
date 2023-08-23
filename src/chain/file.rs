@@ -382,7 +382,7 @@ mod test {
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
 
-    const PUB_KEY: &str = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
+    const ACCOUNT_ADDRESS: &str = "cXjmuHdBk4J3Zyt2oGodwGegNFaTFPcfC48PZ9NMmcUFzF6cc";
 
     fn init_chain() -> ChainSdk {
         ChainSdk::new(MNEMONIC, "service_name")
@@ -391,7 +391,7 @@ mod test {
     #[tokio::test]
     async fn test_store_file() {
         let sdk = init_chain();
-        let result = sdk.store_file("README.md", "MyFirstBucket").await;
+        let result = sdk.store_file("README.md", "SampleBucket").await;
         println!("{:?}", result);
     }
 

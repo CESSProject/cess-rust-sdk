@@ -472,12 +472,12 @@ impl FileBank for ChainSdk {
 #[cfg(test)]
 mod test {
     use super::FileBank;
-    use crate::chain::ChainSdk;
+    use crate::{chain::ChainSdk, core::utils::account::parsing_public_key};
 
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
 
-    const PUB_KEY: &str = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
+    const ACCOUNT_ADDRESS: &str = "cXjmuHdBk4J3Zyt2oGodwGegNFaTFPcfC48PZ9NMmcUFzF6cc";
 
     const BUCKET_NAME: &str = "SampleBucket";
 
@@ -518,7 +518,7 @@ mod test {
     #[tokio::test]
     async fn test_query_user_hold_file_list() {
         let sdk = init_chain();
-        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.query_user_hold_file_list(&pk_bytes).await;
         match result {
             Ok(_) => {
@@ -533,7 +533,7 @@ mod test {
     #[tokio::test]
     async fn test_query_pending_replacements() {
         let sdk = init_chain();
-        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.query_pending_replacements(&pk_bytes).await;
         match result {
             Ok(_) => {
@@ -548,7 +548,7 @@ mod test {
     #[tokio::test]
     async fn test_query_bucket_info() {
         let sdk = init_chain();
-        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.query_bucket_info(&pk_bytes, BUCKET_NAME).await;
         match result {
             Ok(_) => {
@@ -563,7 +563,7 @@ mod test {
     #[tokio::test]
     async fn test_query_user_bucket_list() {
         let sdk = init_chain();
-        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.query_user_bucket_list(&pk_bytes).await;
         match result {
             Ok(_) => {
@@ -578,7 +578,7 @@ mod test {
     #[tokio::test]
     async fn test_query_all_bucket_name() {
         let sdk = init_chain();
-        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.query_all_bucket_name(&pk_bytes).await;
         match result {
             Ok(_) => {
@@ -622,7 +622,7 @@ mod test {
     #[tokio::test]
     async fn test_create_bucket() {
         let sdk = init_chain();
-        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.create_bucket(&pk_bytes, BUCKET_NAME).await;
         match result {
             Ok(_) => {
@@ -638,7 +638,7 @@ mod test {
     #[tokio::test]
     async fn test_delete_bucket() {
         let sdk = init_chain();
-        let pk_bytes = hex::decode(PUB_KEY).unwrap();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.delete_bucket(&pk_bytes, BUCKET_NAME).await;
         match result {
             Ok(_) => {

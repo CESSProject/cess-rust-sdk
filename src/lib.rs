@@ -4,7 +4,7 @@ pub mod chain;
 pub mod config;
 pub mod core;
 pub mod utils;
-use config::{URL, get_custom_url};
+use config::{get_custom_url, URL};
 use subxt::{OnlineClient, PolkadotConfig};
 
 #[subxt::subxt(runtime_metadata_path = "metadata/metadata.scale")]
@@ -15,8 +15,8 @@ async fn init_api() -> OnlineClient<PolkadotConfig> {
         url
     } else {
         URL.to_string()
-    }; 
-    
+    };
+
     match OnlineClient::<PolkadotConfig>::from_url(url).await {
         Ok(api) => api,
         Err(e) => panic!("Failed to initialize API: {}", e),

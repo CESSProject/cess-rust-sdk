@@ -1,6 +1,6 @@
 use super::ChainSdk;
 use super::{deoss::DeOss, file_bank::FileBank, sminer::SMiner};
-use crate::config::{get_custom_deoss_url, get_custom_deoss_account};
+use crate::config::{get_custom_deoss_account, get_custom_deoss_url};
 use crate::polkadot;
 use crate::utils::account_from_slice;
 use crate::{
@@ -176,7 +176,7 @@ impl File for ChainSdk {
             custom_deoss_account
         } else {
             PUBLIC_DEOSS_ACCOUNT.to_string()
-        }; 
+        };
 
         let pk = parsing_public_key(&deoss_account).unwrap();
         if let Err(err) = self.authorize(&pk).await {
@@ -187,7 +187,7 @@ impl File for ChainSdk {
             custom_deoss_url
         } else {
             PUBLIC_DEOSS.to_string()
-        }; 
+        };
 
         self.upload_to_gateway(&deoss_url, file, bucket).await
     }
@@ -197,7 +197,7 @@ impl File for ChainSdk {
             custom_deoss_url
         } else {
             PUBLIC_DEOSS.to_string()
-        }; 
+        };
 
         self.download_from_gateway(&deoss_url, root_hash, save_path)
             .await
@@ -396,7 +396,10 @@ fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
 
 #[cfg(test)]
 mod test {
-    use crate::{chain::{ChainSdk, file::File}, config::PUBLIC_DEOSS};
+    use crate::{
+        chain::{file::File, ChainSdk},
+        config::PUBLIC_DEOSS,
+    };
 
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";

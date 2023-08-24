@@ -30,23 +30,52 @@ pub fn hex_string_to_bytes(hex: &str) -> [u8; 64] {
     result
 }
 
+pub fn block_hex_string_to_h256(hex: &str) -> H256 {
+    let hex_without_prefix = if let Some(hex_without_prefix) = hex.strip_prefix("0x") {
+        hex_without_prefix
+    } else {
+        hex
+    };
+
+    let decoded = hex::decode(hex_without_prefix).expect("Failed to decode hex string");
+    
+    // Ensure the decoded bytes are exactly 32 bytes
+    if decoded.len() != 32 {
+        panic!("Hex string does not have the expected length");
+    }
+
+    let mut hash_array = [0u8; 32];
+    hash_array.copy_from_slice(&decoded);
+
+    H256(hash_array)
+}
+
 pub(crate) async fn query_storage<'address, Address>(
     query: &'address Address,
+    block_hash: Option<H256>
 ) -> Result<Option<<Address as StorageAddress>::Target>>
 where
     Address: StorageAddress<IsFetchable = Yes> + 'address,
 {
     let api = init_api().await;
-
-    match api.storage().at_latest().await {
-        Ok(mid_result) => match mid_result.fetch(query).await {
+    if let Some(block_hash) = block_hash {
+        match api.storage().at(block_hash).fetch(query).await {
             Ok(value) => Ok(value),
             Err(e) => {
                 bail!("Failed to retrieve data from storage: {}", e);
             }
-        },
-        Err(e) => {
-            bail!("Failed to fetch data from storage: {}", e);
+        }
+    } else {
+        match api.storage().at_latest().await {
+            Ok(mid_result) => match mid_result.fetch(query).await {
+                Ok(value) => Ok(value),
+                Err(e) => {
+                    bail!("Failed to retrieve data from storage: {}", e);
+                }
+            },
+            Err(e) => {
+                bail!("Failed to fetch data from storage: {}", e);
+            }
         }
     }
 }

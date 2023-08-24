@@ -21,6 +21,7 @@ use polkadot::{
         sp_core::bounded::{bounded_vec::BoundedVec, weak_bounded_vec::WeakBoundedVec},
     },
 };
+use subxt::ext::sp_core::H256;
 use subxt::tx::PairSigner;
 
 fn audit_storage() -> StorageApi {
@@ -33,30 +34,33 @@ fn audit_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait Audit {
-    async fn query_challenge_duration(&self) -> Result<Option<u32>>;
-    async fn query_verify_duration(&self) -> Result<Option<u32>>;
-    async fn query_cur_authority_index(&self) -> Result<Option<u16>>;
-    async fn query_keys(&self) -> Result<Option<WeakBoundedVec<Public>>>;
+    async fn query_challenge_duration(&self, block_hash: Option<H256>) -> Result<Option<u32>>;
+    async fn query_verify_duration(&self, block_hash: Option<H256>) -> Result<Option<u32>>;
+    async fn query_cur_authority_index(&self, block_hash: Option<H256>) -> Result<Option<u16>>;
+    async fn query_keys(&self, block_hash: Option<H256>) -> Result<Option<WeakBoundedVec<Public>>>;
     async fn query_challenge_proposal(
         &self,
         slice: &[u8; 32],
+        block_hash: Option<H256>,
     ) -> Result<Option<(u32, ChallengeInfo)>>;
-    async fn query_challenge_snapshot(&self) -> Result<Option<ChallengeInfo>>;
-    async fn query_counted_idle_failed(&self, pk: &[u8]) -> Result<Option<u32>>;
-    async fn query_counted_service_failed(&self, pk: &[u8]) -> Result<Option<u32>>;
-    async fn query_counted_clear(&self, pk: &[u8]) -> Result<Option<u8>>;
-    async fn query_challenge_era(&self) -> Result<Option<u32>>;
+    async fn query_challenge_snapshot(&self, block_hash: Option<H256>) -> Result<Option<ChallengeInfo>>;
+    async fn query_counted_idle_failed(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u32>>;
+    async fn query_counted_service_failed(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u32>>;
+    async fn query_counted_clear(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u8>>;
+    async fn query_challenge_era(&self, block_hash: Option<H256>) -> Result<Option<u32>>;
     async fn query_unverify_idle_proof(
         &self,
         pk: &[u8],
+        block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<IdleProveInfo>>>;
     async fn query_unverify_service_proof(
         &self,
         pk: &[u8],
+        block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<ServiceProveInfo>>>;
-    async fn query_verify_result(&self, pk: &[u8]) -> Result<Option<(Option<bool>, Option<bool>)>>;
-    async fn query_lock(&self) -> Result<Option<bool>>;
-    async fn query_verify_reassign_count(&self) -> Result<Option<u8>>;
+    async fn query_verify_result(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<(Option<bool>, Option<bool>)>>;
+    async fn query_lock(&self, block_hash: Option<H256>) -> Result<Option<bool>>;
+    async fn query_verify_reassign_count(&self, block_hash: Option<H256>) -> Result<Option<u8>>;
     async fn save_challenge_info(
         &self,
         challenge_info: ChallengeInfo,
@@ -95,129 +99,132 @@ pub trait Audit {
 impl Audit for ChainSdk {
     /* Query functions */
     // query_challenge_duration
-    async fn query_challenge_duration(&self) -> Result<Option<u32>> {
+    async fn query_challenge_duration(&self, block_hash: Option<H256>) -> Result<Option<u32>> {
         let query = audit_storage().challenge_duration();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_verify_duration
-    async fn query_verify_duration(&self) -> Result<Option<u32>> {
+    async fn query_verify_duration(&self, block_hash: Option<H256>) -> Result<Option<u32>> {
         let query = audit_storage().verify_duration();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_cur_authority_index
-    async fn query_cur_authority_index(&self) -> Result<Option<u16>> {
+    async fn query_cur_authority_index(&self, block_hash: Option<H256>) -> Result<Option<u16>> {
         let query = audit_storage().cur_authority_index();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_keys
-    async fn query_keys(&self) -> Result<Option<WeakBoundedVec<Public>>> {
+    async fn query_keys(&self, block_hash: Option<H256>) -> Result<Option<WeakBoundedVec<Public>>> {
         let query = audit_storage().keys();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_challenge_proposal
     async fn query_challenge_proposal(
         &self,
         slice: &[u8; 32],
+        block_hash: Option<H256>,
     ) -> Result<Option<(u32, ChallengeInfo)>> {
         let query = audit_storage().challenge_proposal(slice);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_challenge_snapshot
-    async fn query_challenge_snapshot(&self) -> Result<Option<ChallengeInfo>> {
+    async fn query_challenge_snapshot(&self, block_hash: Option<H256>) -> Result<Option<ChallengeInfo>> {
         let query = audit_storage().challenge_snap_shot();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_counted_idle_failed
-    async fn query_counted_idle_failed(&self, pk: &[u8]) -> Result<Option<u32>> {
+    async fn query_counted_idle_failed(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().counted_idle_failed(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_counted_service_failed
-    async fn query_counted_service_failed(&self, pk: &[u8]) -> Result<Option<u32>> {
+    async fn query_counted_service_failed(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u32>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().counted_service_failed(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_counted_clear
-    async fn query_counted_clear(&self, pk: &[u8]) -> Result<Option<u8>> {
+    async fn query_counted_clear(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u8>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().counted_clear(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_challenge_era
-    async fn query_challenge_era(&self) -> Result<Option<u32>> {
+    async fn query_challenge_era(&self, block_hash: Option<H256>) -> Result<Option<u32>> {
         let query = audit_storage().challenge_era();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_unverify_idle_proof
     async fn query_unverify_idle_proof(
         &self,
         pk: &[u8],
+        block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<IdleProveInfo>>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().unverify_idle_proof(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_unverify_service_proof
     async fn query_unverify_service_proof(
         &self,
         pk: &[u8],
+        block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<ServiceProveInfo>>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().unverify_service_proof(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_verify_result
-    async fn query_verify_result(&self, pk: &[u8]) -> Result<Option<(Option<bool>, Option<bool>)>> {
+    async fn query_verify_result(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<(Option<bool>, Option<bool>)>> {
         let account = account_from_slice(pk);
 
         let query = audit_storage().verify_result(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_lock
-    async fn query_lock(&self) -> Result<Option<bool>> {
+    async fn query_lock(&self, block_hash: Option<H256>) -> Result<Option<bool>> {
         let query = audit_storage().lock();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_verify_reassign_count
-    async fn query_verify_reassign_count(&self) -> Result<Option<u8>> {
+    async fn query_verify_reassign_count(&self, block_hash: Option<H256>) -> Result<Option<u8>> {
         let query = audit_storage().verify_reassign_count();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     /* Transactional functions */
@@ -328,4 +335,122 @@ impl Audit for ChainSdk {
 
         Ok(hash.to_string())
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{chain::ChainSdk, utils::block_hex_string_to_h256};
+    use super::Audit;
+
+    const MNEMONIC: &str =
+        "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+
+    // Testnet: Block number: 731,214
+    const BLOCK_HASH: &str = "0x41bf39c7e335a5e258a0d55c8e7a95958294f617f96b02a154fcf39a0f40e7f8";
+
+    fn init_chain() -> ChainSdk {
+        ChainSdk::new(MNEMONIC, "service_name")
+    }
+
+    #[tokio::test]
+    async fn test_query_challenge_duration() {
+        let sdk = init_chain();
+
+        let result = sdk.query_challenge_duration(None).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+
+        let hash = block_hex_string_to_h256(BLOCK_HASH);
+        let result = sdk.query_challenge_duration(Some(hash)).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_query_verify_duration(){
+        let sdk = init_chain();
+        let result = sdk.query_verify_duration(None).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+
+        let hash = block_hex_string_to_h256(BLOCK_HASH);
+        let result = sdk.query_verify_duration(Some(hash)).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+
+    #[tokio::test]
+    async fn test_query_cur_authority_index(){
+        let sdk = init_chain();
+        let result = sdk.query_cur_authority_index(None).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+
+        let hash = block_hex_string_to_h256(BLOCK_HASH);
+        let result = sdk.query_cur_authority_index(Some(hash)).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+    
+    #[tokio::test]
+    async fn test_query_keys(){
+        let sdk = init_chain();
+        let result = sdk.query_keys(None).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+
+        let hash = block_hex_string_to_h256(BLOCK_HASH);
+        let result = sdk.query_keys(Some(hash)).await;
+        match result {
+            Ok(_) => {
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }   
 }

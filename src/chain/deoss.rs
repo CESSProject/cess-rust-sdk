@@ -10,6 +10,7 @@ use polkadot::{
     oss::{calls::TransactionApi, events::Authorize, storage::StorageApi},
     runtime_types::sp_core::bounded::bounded_vec::BoundedVec,
 };
+use subxt::ext::sp_core::H256;
 use subxt::tx::PairSigner;
 use subxt::utils::AccountId32;
 
@@ -23,8 +24,8 @@ fn oss_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait DeOss {
-    async fn query_authority_list(&self, pk: &[u8]) -> Result<Option<BoundedVec<AccountId32>>>;
-    async fn oss(&self, pk: &[u8]) -> Result<Option<[u8; 38]>>;
+    async fn query_authority_list(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_oss(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<[u8; 38]>>;
     async fn authorize(&self, pk: &[u8]) -> Result<(String, Authorize)>;
     async fn cancel_authorize(&self, pk: &[u8]) -> Result<String>;
     async fn register_deoss(&self, endpoint: [u8; 38]) -> Result<String>;
@@ -37,21 +38,21 @@ impl DeOss for ChainSdk {
     /* Query functions */
 
     // query_authority_list
-    async fn query_authority_list(&self, pk: &[u8]) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_authority_list(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().authority_list(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // oss
-    async fn oss(&self, pk: &[u8]) -> Result<Option<[u8; 38]>> {
+    async fn query_oss(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<[u8; 38]>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().oss(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     /* Transactional functions */

@@ -14,6 +14,7 @@ use polkadot::{
         storage::StorageApi,
     },
 };
+use subxt::ext::sp_core::H256;
 use subxt::tx::PairSigner;
 
 fn storage_handler_storage() -> StorageApi {
@@ -26,11 +27,11 @@ fn storage_handler_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait StorageHandler {
-    async fn query_user_owned_space(&self, pk: &[u8]) -> Result<Option<OwnedSpaceDetails>>;
-    async fn query_unit_price(&self) -> Result<Option<u128>>;
-    async fn query_total_power(&self) -> Result<Option<u128>>;
-    async fn query_total_space(&self) -> Result<Option<u128>>;
-    async fn query_purchased_space(&self) -> Result<Option<u128>>;
+    async fn query_user_owned_space(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OwnedSpaceDetails>>;
+    async fn query_unit_price(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
+    async fn query_total_power(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
+    async fn query_total_space(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
+    async fn query_purchased_space(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
     async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)>;
     async fn expansion_space(&self, gib_count: u32) -> Result<(String, ExpansionSpace)>;
     async fn renewal_space(&self, days: u32) -> Result<(String, RenewalSpace)>;
@@ -41,39 +42,39 @@ pub trait StorageHandler {
 impl StorageHandler for ChainSdk {
     /* Query functions */
     // query_user_owned_space
-    async fn query_user_owned_space(&self, pk: &[u8]) -> Result<Option<OwnedSpaceDetails>> {
+    async fn query_user_owned_space(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OwnedSpaceDetails>> {
         let account = account_from_slice(pk);
         let query = storage_handler_storage().user_owned_space(&account);
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_unit_price
-    async fn query_unit_price(&self) -> Result<Option<u128>> {
+    async fn query_unit_price(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
         let query = storage_handler_storage().unit_price();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_total_power
-    async fn query_total_power(&self) -> Result<Option<u128>> {
+    async fn query_total_power(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
         let query = storage_handler_storage().total_idle_space();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_total_space
-    async fn query_total_space(&self) -> Result<Option<u128>> {
+    async fn query_total_space(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
         let query = storage_handler_storage().total_service_space();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     // query_purchased_space
-    async fn query_purchased_space(&self) -> Result<Option<u128>> {
+    async fn query_purchased_space(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
         let query = storage_handler_storage().purchased_space();
 
-        query_storage(&query).await
+        query_storage(&query, block_hash).await
     }
 
     /* Transactional functions */

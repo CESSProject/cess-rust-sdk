@@ -99,13 +99,13 @@ pub fn verify_address(address: &str, prefix: &[u8]) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use crate::{config::PUBLIC_DEOSS_ACCOUNT, utils::account_from_slice};
+    use crate::{config::get_deoss_account, utils::account_from_slice};
 
     use super::parsing_public_key;
 
     #[test]
     fn test_parsing_public_key() {
-        let pk = parsing_public_key(PUBLIC_DEOSS_ACCOUNT).unwrap();
+        let pk = parsing_public_key(&get_deoss_account()).unwrap();
         let account = account_from_slice(&pk);
         assert_eq!(
             account.to_string(),

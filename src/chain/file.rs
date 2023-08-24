@@ -30,7 +30,7 @@ use reqwest::{Client, RequestBuilder};
 use std::fs::{metadata, remove_file, File as FFile};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use subxt::ext::sp_core::Pair;
+use subxt::ext::sp_core::{Pair, H256};
 
 use libp2p::PeerId;
 
@@ -64,6 +64,7 @@ pub trait File {
     async fn query_assigned_miner_peer_id(
         &self,
         miner_task_list: Vec<MinerTaskList>,
+        block_hash: Option<H256>,
     ) -> Result<Vec<PeerId>>;
 }
 
@@ -297,12 +298,13 @@ impl File for ChainSdk {
     async fn query_assigned_miner_peer_id(
         &self,
         miner_task_list: Vec<MinerTaskList>,
+        block_hash: Option<H256>,
     ) -> Result<Vec<PeerId>> {
         let mut peer_ids = Vec::new();
 
         for v in miner_task_list {
             let pk = &v.miner.0;
-            let miner_info = match self.query_miner_items(pk).await {
+            let miner_info = match self.query_miner_items(pk, block_hash).await {
                 Ok(value) => value,
                 Err(err) => bail!(err),
             };
@@ -383,13 +385,11 @@ fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
 mod test {
     use crate::{
         chain::{file::File, ChainSdk},
-        config::PUBLIC_DEOSS,
+        config::get_deoss_url
     };
 
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
-
-    const ACCOUNT_ADDRESS: &str = "cXjmuHdBk4J3Zyt2oGodwGegNFaTFPcfC48PZ9NMmcUFzF6cc";
 
     fn init_chain() -> ChainSdk {
         ChainSdk::new(MNEMONIC, "service_name")
@@ -408,7 +408,7 @@ mod test {
         let path = "/tmp";
         let root_hash = "5b476ba750c0da1ec2392a0819384b2b3348f032e118578f6e13c41a57c9ec6f";
         let result = sdk
-            .download_from_gateway(PUBLIC_DEOSS, root_hash, path)
+            .download_from_gateway(&get_deoss_url(), root_hash, path)
             .await;
         println!("{:?}", result);
     }

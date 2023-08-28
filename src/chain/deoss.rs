@@ -112,3 +112,37 @@ impl DeOss for ChainSdk {
         Ok(hash.to_string())
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use crate::{core::utils::account::parsing_public_key, chain::ChainSdk};
+
+    use super::DeOss;
+
+
+    const MNEMONIC: &str =
+        "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+
+    const ACCOUNT_ADDRESS: &str = "cXjmuHdBk4J3Zyt2oGodwGegNFaTFPcfC48PZ9NMmcUFzF6cc";
+
+    fn init_chain() -> ChainSdk {
+        ChainSdk::new(MNEMONIC, "service_name")
+    }
+
+    #[tokio::test]
+    async fn test_authorize() {
+        let sdk = init_chain();
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
+    let result = sdk.authorize(&pk_bytes).await;
+    match result {
+        Ok(r) => {
+            println!("Account authorize successful: {:?}", r);
+        }
+        Err(e) => {
+            println!("Account authorize failed: {:?}", e);
+        }
+    }
+    }
+
+}

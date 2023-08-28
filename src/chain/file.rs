@@ -389,7 +389,7 @@ mod test {
     };
 
     const MNEMONIC: &str =
-        "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+        "total pattern kind myself about paddle thrive flash paper leader tired noise";
 
     fn init_chain() -> ChainSdk {
         ChainSdk::new(MNEMONIC, "service_name")

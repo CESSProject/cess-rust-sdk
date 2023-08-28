@@ -132,3 +132,28 @@ impl StorageHandler for ChainSdk {
         Ok(hash.to_string())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::StorageHandler;
+    use crate::chain::ChainSdk;
+
+    const MNEMONIC: &str =
+        "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+
+    fn init_chain() -> ChainSdk {
+        ChainSdk::new(MNEMONIC, "service_name")
+    }
+
+    #[tokio::test]
+    async fn test_buy_space() {
+        let sdk = init_chain();
+        let result = sdk.buy_space(1).await;
+        if let Err(e) = result {
+            println!("Error :::: {:?}", e);
+            assert!(false);
+        } else {
+            assert!(true);
+        }
+    }
+}

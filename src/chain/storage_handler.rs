@@ -150,7 +150,7 @@ mod test {
         let sdk = init_chain();
         let result = sdk.buy_space(1).await;
         if let Err(e) = result {
-            println!("Error :::: {:?}", e);
+            println!("Error: {:?}", e);
             assert!(false);
         } else {
             assert!(true);

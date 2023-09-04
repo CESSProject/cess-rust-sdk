@@ -32,7 +32,6 @@ fn sminer_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait SMiner {
-    async fn query_miner_lock_in(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u32>>;
     async fn query_miner_items(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<MinerInfo>>;
     async fn query_all_miner(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>>;
     async fn query_reward_map(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<Reward>>;
@@ -60,20 +59,11 @@ pub trait SMiner {
     async fn miner_exit_prep(&self) -> Result<(String, MinerExitPrep)>;
     async fn miner_exit(&self, miner: &[u8]) -> Result<String>;
     async fn miner_withdraw(&self) -> Result<String>;
-    async fn update_expender(&self, k: u64, n: u64, d: u64) -> Result<String>;
 }
 
 #[async_trait]
 impl SMiner for ChainSdk {
     /* Query functions */
-    // query_miner_lock_in
-    async fn query_miner_lock_in(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u32>> {
-        let account = account_from_slice(pk);
-
-        let query = sminer_storage().miner_lock_in(&account);
-
-        query_storage(&query, block_hash).await
-    }
 
     // query_miner_items
     async fn query_miner_items(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<MinerInfo>> {
@@ -236,16 +226,6 @@ impl SMiner for ChainSdk {
 
     async fn miner_withdraw(&self) -> Result<String> {
         let tx = sminer_tx().miner_withdraw();
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
-    }
-
-    async fn update_expender(&self, k: u64, n: u64, d: u64) -> Result<String> {
-        let tx = sminer_tx().update_expender(k, n, d);
 
         let from = PairSigner::new(self.pair.clone());
 

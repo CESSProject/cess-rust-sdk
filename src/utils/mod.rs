@@ -112,9 +112,8 @@ where
     match api.tx().sign_and_submit_then_watch_default(tx, from).await {
         Ok(result) => match result.wait_for_finalized_success().await {
             Ok(r) => Ok(r),
-            Err(e) => {
-                let err = anyhow!("Error waiting for finalized success: {}", e);
-                bail!("{}", err);
+            Err(_) => {
+                bail!("Error waiting for finalized success");
             }
         },
         Err(e) => {

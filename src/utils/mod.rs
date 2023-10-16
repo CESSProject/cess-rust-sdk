@@ -38,7 +38,7 @@ pub fn block_hex_string_to_h256(hex: &str) -> H256 {
     };
 
     let decoded = hex::decode(hex_without_prefix).expect("Failed to decode hex string");
-    
+
     // Ensure the decoded bytes are exactly 32 bytes
     if decoded.len() != 32 {
         panic!("Hex string does not have the expected length");
@@ -52,7 +52,7 @@ pub fn block_hex_string_to_h256(hex: &str) -> H256 {
 
 pub(crate) async fn query_storage<'address, Address>(
     query: &'address Address,
-    block_hash: Option<H256>
+    block_hash: Option<H256>,
 ) -> Result<Option<<Address as StorageAddress>::Target>>
 where
     Address: StorageAddress<IsFetchable = Yes> + 'address,

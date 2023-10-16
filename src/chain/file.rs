@@ -1,6 +1,7 @@
 use super::ChainSdk;
 use super::{deoss::DeOss, file_bank::FileBank, sminer::SMiner};
 use crate::config::{get_deoss_account, get_deoss_url};
+use crate::core::crypt;
 use crate::core::{
     erasure::{read_solomon_restore, reed_solomon},
     hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash},
@@ -14,7 +15,7 @@ use crate::core::{
 };
 use crate::polkadot;
 use crate::utils::account_from_slice;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use base58::ToBase58;
 use polkadot::{
@@ -25,9 +26,10 @@ use polkadot::{
         sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
+use rand::Rng;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{Client, RequestBuilder};
-use std::fs::{metadata, remove_file, File as FFile};
+use std::fs::{self, metadata, remove_file, File as FFile};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use subxt::ext::sp_core::{Pair, H256};
@@ -66,6 +68,11 @@ pub trait File {
         miner_task_list: Vec<MinerTaskList>,
         block_hash: Option<H256>,
     ) -> Result<Vec<PeerId>>;
+    fn sharded_encryption_processing(
+        &self,
+        file: &str,
+        cipher: &str,
+    ) -> Result<(Vec<SegmentDataInfo>, String)>;
 }
 
 #[async_trait]
@@ -105,7 +112,7 @@ impl File for ChainSdk {
                     .to_string_lossy(),
             )?
         } else {
-            build_merkle_root_hash(extract_segmenthash(&segment_paths))?
+            build_merkle_root_hash(extract_segment_hash(&segment_paths))?
         };
 
         Ok((segment_data_info, hash))
@@ -321,6 +328,69 @@ impl File for ChainSdk {
 
         Ok(peer_ids)
     }
+
+    fn sharded_encryption_processing(
+        &self,
+        file: &str,
+        cipher: &str,
+    ) -> Result<(Vec<SegmentDataInfo>, String)> {
+        let mut segment_path: Vec<PathBuf>;
+
+        if !cipher.is_empty() {
+            segment_path = cut_file_with_encryption(file)
+                .with_context(|| "Failed to cut file with encryption")?;
+            match encrypted_segment(segment_path.clone(), cipher)
+                .with_context(|| "Failed to encrypt segments")
+            {
+                Ok(new_segment_path) => {
+                    segment_path = new_segment_path;
+                }
+                Err(e) => {
+                    for path in &segment_path {
+                        fs::remove_file(path)
+                            .with_context(|| format!("Failed to remove file: {:?}", path))?;
+                    }
+                    return Err(e).with_context(|| "Error during encrypted_segment");
+                }
+            }
+        } else {
+            segment_path = cut_file(file).with_context(|| "Failed to cut file")?;
+        }
+
+        let mut segment_data_info = Vec::with_capacity(segment_path.len());
+
+        for path in &segment_path {
+            let fragment_hash = reed_solomon(&path.to_string_lossy()).with_context(|| {
+                format!("Failed to calculate Reed-Solomon hash for: {:?}", path)
+            })?;
+
+            let segment_info = SegmentDataInfo {
+                segment_hash: path.clone(),
+                fragment_hash,
+            };
+
+            segment_data_info.push(segment_info);
+
+            fs::remove_file(path).with_context(|| format!("Failed to remove file: {:?}", path))?;
+        }
+
+        let hash: String;
+
+        if segment_path.len() == 1 {
+            hash = build_simple_merkle_root_hash(
+                &Path::new(&segment_path[0])
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy(),
+            )
+            .with_context(|| "Failed to build simple Merkle root hash")?;
+        } else {
+            hash = build_merkle_root_hash(extract_segment_hash(&segment_path))
+                .with_context(|| "Failed to build Merkle root hash")?;
+        }
+
+        Ok((segment_data_info, hash))
+    }
 }
 
 fn cut_file(file: &str) -> Result<Vec<PathBuf>> {
@@ -367,7 +437,81 @@ fn cut_file(file: &str) -> Result<Vec<PathBuf>> {
     Ok(segments)
 }
 
-fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
+fn cut_file_with_encryption(file: &str) -> Result<Vec<PathBuf>> {
+    let fstat = fs::metadata(file)?;
+    if fstat.is_dir() {
+        bail!("not a file");
+    }
+    if fstat.len() == 0 {
+        bail!("empty file");
+    }
+    let base_dir = Path::new(file)
+        .parent()
+        .ok_or_else(|| anyhow!("failed to determine parent directory"))?;
+    let segment_count = (fstat.len() + SEGMENT_SIZE as u64 - 1) / SEGMENT_SIZE as u64;
+
+    let mut segments: Vec<PathBuf> = Vec::with_capacity(segment_count as usize);
+    let mut buf = vec![0u8; SEGMENT_SIZE as usize];
+    let mut f = fs::File::open(file)?;
+
+    for i in 0..segment_count {
+        let offset = i * SEGMENT_SIZE as u64;
+        f.seek(SeekFrom::Start(offset))?;
+        let num = f.read(&mut buf)?;
+
+        if num == 0 {
+            bail!("read file is empty");
+        }
+        if num < SEGMENT_SIZE as usize {
+            if i + 1 != segment_count {
+                bail!("read file err");
+            }
+            let remaining = SEGMENT_SIZE as usize - num;
+            let mut rng = rand::thread_rng();
+            for j in num..SEGMENT_SIZE as usize {
+                buf[j] = rng.gen::<u8>();
+            }
+        }
+
+        let hash = calc_sha256(&buf)?;
+        let segment_path = base_dir.join(&hash);
+
+        let mut segment_file = fs::File::create(&segment_path)?;
+        segment_file.write_all(&buf)?;
+
+        segments.push(segment_path);
+    }
+
+    Ok(segments)
+}
+
+fn encrypted_segment(segments: Vec<PathBuf>, cipher: &str) -> Result<Vec<PathBuf>> {
+    let mut encrypted_segments: Vec<PathBuf> = Vec::with_capacity(segments.len());
+
+    for segment_path in &segments {
+        let mut buf = fs::read(segment_path)?;
+
+        buf = crypt::aes_cbc_encrypt(&buf, cipher.as_bytes())?;
+
+        let hash = calc_sha256(&buf)?;
+        let encrypted_segment_path = segment_path
+            .parent()
+            .ok_or_else(|| anyhow!("failed to determine parent directory"))?
+            .join(&hash);
+
+        fs::write(&encrypted_segment_path, &buf)?;
+
+        encrypted_segments.push(encrypted_segment_path);
+    }
+
+    for segment_path in &segments {
+        fs::remove_file(segment_path)?;
+    }
+
+    Ok(encrypted_segments)
+}
+
+fn extract_segment_hash(segment: &[PathBuf]) -> Vec<String> {
     let mut segmenthash = Vec::with_capacity(segment.len());
     for seg in segment.iter() {
         let base = Path::new(seg)
@@ -385,7 +529,7 @@ fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
 mod test {
     use crate::{
         chain::{file::File, ChainSdk},
-        config::get_deoss_url
+        config::get_deoss_url,
     };
 
     const MNEMONIC: &str =

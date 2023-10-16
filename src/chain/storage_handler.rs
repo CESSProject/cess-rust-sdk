@@ -27,7 +27,11 @@ fn storage_handler_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait StorageHandler {
-    async fn query_user_owned_space(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OwnedSpaceDetails>>;
+    async fn query_user_owned_space(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<OwnedSpaceDetails>>;
     async fn query_unit_price(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
     async fn query_total_power(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
     async fn query_total_space(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
@@ -42,7 +46,11 @@ pub trait StorageHandler {
 impl StorageHandler for ChainSdk {
     /* Query functions */
     // query_user_owned_space
-    async fn query_user_owned_space(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OwnedSpaceDetails>> {
+    async fn query_user_owned_space(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<OwnedSpaceDetails>> {
         let account = account_from_slice(pk);
         let query = storage_handler_storage().user_owned_space(&account);
 

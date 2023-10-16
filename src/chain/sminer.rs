@@ -32,11 +32,23 @@ fn sminer_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait SMiner {
-    async fn query_miner_items(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<MinerInfo>>;
-    async fn query_all_miner(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>>;
-    async fn query_reward_map(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<Reward>>;
+    async fn query_miner_items(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<MinerInfo>>;
+    async fn query_all_miner(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_reward_map(&self, pk: &[u8], block_hash: Option<H256>)
+        -> Result<Option<Reward>>;
     async fn query_currency_reward(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
-    async fn query_miner_public_key(&self, slice: [u8; 32], block_hash: Option<H256>) -> Result<Option<AccountId32>>;
+    async fn query_miner_public_key(
+        &self,
+        slice: [u8; 32],
+        block_hash: Option<H256>,
+    ) -> Result<Option<AccountId32>>;
     async fn query_expenders(&self, block_hash: Option<H256>) -> Result<Option<(u64, u64, u64)>>;
     async fn query_miner_lock(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u32>>;
     async fn query_restoral_target(
@@ -66,7 +78,11 @@ impl SMiner for ChainSdk {
     /* Query functions */
 
     // query_miner_items
-    async fn query_miner_items(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<MinerInfo>> {
+    async fn query_miner_items(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<MinerInfo>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().miner_items(&account);
@@ -75,14 +91,21 @@ impl SMiner for ChainSdk {
     }
 
     // query_all_miner
-    async fn query_all_miner(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_all_miner(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = sminer_storage().all_miner();
 
         query_storage(&query, block_hash).await
     }
 
     // query_reward_map
-    async fn query_reward_map(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<Reward>> {
+    async fn query_reward_map(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<Reward>> {
         let account = account_from_slice(pk);
 
         let query = sminer_storage().reward_map(&account);
@@ -98,7 +121,11 @@ impl SMiner for ChainSdk {
     }
 
     // query_miner_public_key
-    async fn query_miner_public_key(&self, slice: [u8; 32], block_hash: Option<H256>) -> Result<Option<AccountId32>> {
+    async fn query_miner_public_key(
+        &self,
+        slice: [u8; 32],
+        block_hash: Option<H256>,
+    ) -> Result<Option<AccountId32>> {
         let query = sminer_storage().miner_public_key(slice);
 
         query_storage(&query, block_hash).await

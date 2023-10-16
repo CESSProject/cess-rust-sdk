@@ -27,7 +27,7 @@ pub struct ChallengeInfo {
     pub start: u32,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct SegmentDataInfo {
     pub segment_hash: PathBuf,
     pub fragment_hash: Vec<PathBuf>,

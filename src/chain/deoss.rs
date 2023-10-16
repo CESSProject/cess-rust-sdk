@@ -24,7 +24,11 @@ fn oss_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait DeOss {
-    async fn query_authority_list(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_authority_list(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>>;
     async fn query_oss(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<[u8; 38]>>;
     async fn authorize(&self, pk: &[u8]) -> Result<(String, Authorize)>;
     async fn cancel_authorize(&self, pk: &[u8]) -> Result<String>;
@@ -38,7 +42,11 @@ impl DeOss for ChainSdk {
     /* Query functions */
 
     // query_authority_list
-    async fn query_authority_list(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_authority_list(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().authority_list(&account);
@@ -113,13 +121,11 @@ impl DeOss for ChainSdk {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use crate::{core::utils::account::parsing_public_key, chain::ChainSdk};
+    use crate::{chain::ChainSdk, core::utils::account::parsing_public_key};
 
     use super::DeOss;
-
 
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
@@ -134,15 +140,14 @@ mod test {
     async fn test_authorize() {
         let sdk = init_chain();
         let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
-    let result = sdk.authorize(&pk_bytes).await;
-    match result {
-        Ok(r) => {
-            println!("Account authorize successful: {:?}", r);
-        }
-        Err(e) => {
-            println!("Account authorize failed: {:?}", e);
+        let result = sdk.authorize(&pk_bytes).await;
+        match result {
+            Ok(r) => {
+                println!("Account authorize successful: {:?}", r);
+            }
+            Err(e) => {
+                println!("Account authorize failed: {:?}", e);
+            }
         }
     }
-    }
-
 }

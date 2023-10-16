@@ -406,7 +406,6 @@ dependencies = [
  "reed-solomon-erasure",
  "regex",
  "reqwest",
- "ring",
  "sha2 0.10.7",
  "sp-keyring",
  "subxt",

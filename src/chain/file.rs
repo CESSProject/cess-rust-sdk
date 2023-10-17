@@ -466,7 +466,6 @@ fn cut_file_with_encryption(file: &str) -> Result<Vec<PathBuf>> {
             if i + 1 != segment_count {
                 bail!("read file err");
             }
-            let remaining = SEGMENT_SIZE as usize - num;
             let mut rng = rand::thread_rng();
             for j in num..SEGMENT_SIZE as usize {
                 buf[j] = rng.gen::<u8>();

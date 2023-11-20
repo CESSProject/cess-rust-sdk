@@ -1,5 +1,8 @@
 use anyhow::{bail, Context, Result};
 use blake2::{Blake2b512, Digest};
+use subxt::ext::sp_core::crypto::{AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec};
+use sp_keyring::sr25519::sr25519::Pair;
+use subxt::ext::sp_core::Pair as sp_core_pair;
 
 const SS_PREFIX: [u8; 7] = [0x53, 0x53, 0x35, 0x38, 0x50, 0x52, 0x45];
 const SUBSTRATE_PREFIX: [u8; 1] = [0x2a];
@@ -95,6 +98,23 @@ pub fn verify_address(address: &str, prefix: &[u8]) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn get_ss58_address(account_str: &str) -> Result<String> {
+    let ss58_address = AccountId32::from_string(account_str)?;
+    let address_type = Ss58AddressFormatRegistry::CessTestnetAccount as u16;
+    let ss58_cess_address =
+        ss58_address.to_ss58check_with_version(Ss58AddressFormat::custom(address_type));
+
+    Ok(ss58_cess_address)
+}
+
+pub fn get_pair_address_as_ss58_address(pair: Pair) -> Result<String> {
+    let address_type = Ss58AddressFormatRegistry::CessTestnetAccount as u16;
+    let ss58_cess_address = pair
+        .public()
+        .to_ss58check_with_version(Ss58AddressFormat::custom(address_type));
+    Ok(ss58_cess_address)
 }
 
 #[cfg(test)]

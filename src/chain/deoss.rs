@@ -8,7 +8,7 @@ use anyhow::{bail, Result};
 use async_trait::async_trait;
 use polkadot::{
     oss::{calls::TransactionApi, events::Authorize, storage::StorageApi},
-    runtime_types::sp_core::bounded::bounded_vec::BoundedVec,
+    runtime_types::{bounded_collections::bounded_vec::BoundedVec, pallet_oss::types::OssInfo},
 };
 use subxt::ext::sp_core::H256;
 use subxt::tx::PairSigner;
@@ -24,12 +24,16 @@ fn oss_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait DeOss {
-    async fn query_authority_list(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>>;
-    async fn query_oss(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<[u8; 38]>>;
+    async fn query_authority_list(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_oss(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OssInfo>>;
     async fn authorize(&self, pk: &[u8]) -> Result<(String, Authorize)>;
     async fn cancel_authorize(&self, pk: &[u8]) -> Result<String>;
-    async fn register_deoss(&self, endpoint: [u8; 38]) -> Result<String>;
-    async fn update(&self, endpoint: [u8; 38]) -> Result<String>;
+    async fn register_deoss(&self, endpoint: [u8; 38], domain: BoundedVec<u8>) -> Result<String>;
+    async fn update(&self, endpoint: [u8; 38], domain: BoundedVec<u8>) -> Result<String>;
     async fn destroy(&self) -> Result<String>;
 }
 
@@ -38,7 +42,11 @@ impl DeOss for ChainSdk {
     /* Query functions */
 
     // query_authority_list
-    async fn query_authority_list(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_authority_list(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().authority_list(&account);
@@ -47,7 +55,7 @@ impl DeOss for ChainSdk {
     }
 
     // oss
-    async fn query_oss(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<[u8; 38]>> {
+    async fn query_oss(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OssInfo>> {
         let account = account_from_slice(pk);
 
         let query = oss_storage().oss(&account);
@@ -85,8 +93,8 @@ impl DeOss for ChainSdk {
         Ok(hash.to_string())
     }
 
-    async fn register_deoss(&self, endpoint: [u8; 38]) -> Result<String> {
-        let tx = oss_tx().register(endpoint);
+    async fn register_deoss(&self, endpoint: [u8; 38], domain: BoundedVec<u8>) -> Result<String> {
+        let tx = oss_tx().register(endpoint, domain);
 
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
@@ -94,8 +102,8 @@ impl DeOss for ChainSdk {
         Ok(hash.to_string())
     }
 
-    async fn update(&self, endpoint: [u8; 38]) -> Result<String> {
-        let tx = oss_tx().update(endpoint);
+    async fn update(&self, endpoint: [u8; 38], domain: BoundedVec<u8>) -> Result<String> {
+        let tx = oss_tx().update(endpoint, domain);
 
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
@@ -113,13 +121,11 @@ impl DeOss for ChainSdk {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use crate::{core::utils::account::parsing_public_key, chain::ChainSdk};
+    use crate::{chain::ChainSdk, core::utils::account::parsing_public_key};
 
     use super::DeOss;
-
 
     const MNEMONIC: &str =
         "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
@@ -134,15 +140,14 @@ mod test {
     async fn test_authorize() {
         let sdk = init_chain();
         let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
-    let result = sdk.authorize(&pk_bytes).await;
-    match result {
-        Ok(r) => {
-            println!("Account authorize successful: {:?}", r);
-        }
-        Err(e) => {
-            println!("Account authorize failed: {:?}", e);
+        let result = sdk.authorize(&pk_bytes).await;
+        match result {
+            Ok(r) => {
+                println!("Account authorize successful: {:?}", r);
+            }
+            Err(e) => {
+                println!("Account authorize failed: {:?}", e);
+            }
         }
     }
-    }
-
 }

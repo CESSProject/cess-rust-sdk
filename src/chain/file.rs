@@ -20,9 +20,9 @@ use base58::ToBase58;
 use polkadot::{
     file_bank::events::UploadDeclaration,
     runtime_types::{
+        bounded_collections::bounded_vec::BoundedVec,
         cp_cess_common::Hash,
         pallet_file_bank::types::{MinerTaskList, SegmentList, UserBrief},
-        sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
 use reqwest::header::{HeaderMap, HeaderValue};
@@ -385,7 +385,7 @@ fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
 mod test {
     use crate::{
         chain::{file::File, ChainSdk},
-        config::get_deoss_url
+        config::get_deoss_url,
     };
 
     const MNEMONIC: &str =

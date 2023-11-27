@@ -1,7 +1,9 @@
 use anyhow::{bail, Context, Result};
 use blake2::{Blake2b512, Digest};
-use subxt::ext::sp_core::crypto::{AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec};
 use sp_keyring::sr25519::sr25519::Pair;
+use subxt::ext::sp_core::crypto::{
+    AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec,
+};
 use subxt::ext::sp_core::Pair as sp_core_pair;
 
 const SS_PREFIX: [u8; 7] = [0x53, 0x53, 0x35, 0x38, 0x50, 0x52, 0x45];

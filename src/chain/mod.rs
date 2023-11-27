@@ -3,7 +3,7 @@ pub mod deoss;
 pub mod file;
 pub mod file_bank;
 pub mod sminer;
-pub mod snapshot;
+// pub mod snapshot;
 pub mod storage_handler;
 pub mod tee_worker;
 

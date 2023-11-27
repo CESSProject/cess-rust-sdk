@@ -16,12 +16,12 @@ use polkadot::{
         storage::StorageApi,
     },
     runtime_types::{
+        bounded_collections::bounded_vec::BoundedVec,
         cp_cess_common::{Hash as CPHash, SpaceProofInfo},
         pallet_file_bank::types::{
             BucketInfo, DealInfo, FileInfo, RestoralOrderInfo, SegmentList, UserBrief,
             UserFileSliceInfo,
         },
-        sp_core::bounded::bounded_vec::BoundedVec,
     },
 };
 use subxt::ext::sp_core::H256;
@@ -37,20 +37,51 @@ fn file_bank_tx() -> TransactionApi {
 }
 #[async_trait]
 pub trait FileBank {
-    async fn query_storage_order(&self, root_hash: &str, block_hash: Option<H256>) -> Result<Option<DealInfo>>;
-    async fn query_file_metadata(&self, root_hash: &str, block_hash: Option<H256>) -> Result<Option<FileInfo>>;
+    async fn query_storage_order(
+        &self,
+        root_hash: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<DealInfo>>;
+    async fn query_file_metadata(
+        &self,
+        root_hash: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<FileInfo>>;
     async fn query_user_hold_file_list(
         &self,
         pk: &[u8],
         block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<UserFileSliceInfo>>>;
-    async fn query_pending_replacements(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u128>>;
-    async fn query_bucket_info(&self, pk: &[u8], bucket_name: &str, block_hash: Option<H256>) -> Result<Option<BucketInfo>>;
-    async fn query_user_bucket_list(&self, pk: &[u8], block_hash: Option<H256>)
-        -> Result<Option<BoundedVec<BoundedVec<u8>>>>;
-    async fn query_all_bucket_name(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Vec<String>>;
-    async fn query_restoral_order(&self, hash: &str, block_hash: Option<H256>) -> Result<Option<RestoralOrderInfo>>;
-    async fn query_clear_user_list(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_pending_replacements(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<u128>>;
+    async fn query_bucket_info(
+        &self,
+        pk: &[u8],
+        bucket_name: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BucketInfo>>;
+    async fn query_user_bucket_list(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<BoundedVec<u8>>>>;
+    async fn query_all_bucket_name(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Vec<String>>;
+    async fn query_restoral_order(
+        &self,
+        hash: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<RestoralOrderInfo>>;
+    async fn query_clear_user_list(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>>;
     async fn upload_declaration(
         &self,
         file_hash: &str,
@@ -60,15 +91,14 @@ pub trait FileBank {
     ) -> Result<(String, UploadDeclaration)>;
     async fn deal_reassign_miner(&self, deal_hash: &str, count: u8, life: u32) -> Result<String>;
     async fn ownership_transfer(&self, target_brief: UserBrief, file_hash: &str) -> Result<String>;
-    async fn transfer_report(&self, deal_hash: Vec<&str>) -> Result<(String, AccountId32)>;
+    async fn transfer_report(&self, deal_hash: &str) -> Result<(String, AccountId32)>;
     async fn calculate_end(&self, deal_hash: &str) -> Result<(String, CPHash)>;
     async fn replace_idle_space(
         &self,
         idle_sig_info: SpaceProofInfo<AccountId32>,
         sign: &[u8; 256],
     ) -> Result<String>;
-    async fn delete_file(&self, pk: &[u8], file_hash: Vec<String>)
-        -> Result<(String, Vec<CPHash>)>;
+    async fn delete_file(&self, pk: &[u8], file_hash: &str) -> Result<(String, CPHash)>;
     async fn cert_idle_space(
         &self,
         idle_sig_info: SpaceProofInfo<AccountId32>,
@@ -100,7 +130,11 @@ pub trait FileBank {
 impl FileBank for ChainSdk {
     /* Query functions */
     // query_storage_order
-    async fn query_storage_order(&self, root_hash: &str, block_hash: Option<H256>) -> Result<Option<DealInfo>> {
+    async fn query_storage_order(
+        &self,
+        root_hash: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<DealInfo>> {
         let hash = hash_from_string(root_hash);
         let query = file_bank_storage().deal_map(hash);
 
@@ -108,7 +142,11 @@ impl FileBank for ChainSdk {
     }
 
     // query_file_metadata
-    async fn query_file_metadata(&self, root_hash: &str, block_hash: Option<H256>) -> Result<Option<FileInfo>> {
+    async fn query_file_metadata(
+        &self,
+        root_hash: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<FileInfo>> {
         let hash = hash_from_string(root_hash);
         let query = file_bank_storage().file(hash);
 
@@ -129,7 +167,11 @@ impl FileBank for ChainSdk {
     }
 
     // query_pending_replacements
-    async fn query_pending_replacements(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u128>> {
+    async fn query_pending_replacements(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<u128>> {
         let account = account_from_slice(pk);
 
         let query = file_bank_storage().pending_replacements(&account);
@@ -138,7 +180,12 @@ impl FileBank for ChainSdk {
     }
 
     // query_bucket_info
-    async fn query_bucket_info(&self, pk: &[u8], bucket_name: &str, block_hash: Option<H256>) -> Result<Option<BucketInfo>> {
+    async fn query_bucket_info(
+        &self,
+        pk: &[u8],
+        bucket_name: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BucketInfo>> {
         let account = account_from_slice(pk);
 
         let name_bytes: BoundedVec<u8> = BoundedVec(bucket_name.as_bytes().to_vec());
@@ -162,7 +209,11 @@ impl FileBank for ChainSdk {
     }
 
     // query_all_bucket_name
-    async fn query_all_bucket_name(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Vec<String>> {
+    async fn query_all_bucket_name(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Vec<String>> {
         match self.query_user_bucket_list(pk, block_hash).await {
             Ok(bucketlist) => {
                 if let Some(bucketlist) = bucketlist {
@@ -183,7 +234,11 @@ impl FileBank for ChainSdk {
     }
 
     // query_restoral_order
-    async fn query_restoral_order(&self, hash: &str, block_hash: Option<H256>) -> Result<Option<RestoralOrderInfo>> {
+    async fn query_restoral_order(
+        &self,
+        hash: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<RestoralOrderInfo>> {
         let hash = hash_from_string(hash);
 
         let query = file_bank_storage().restoral_order(&hash);
@@ -192,7 +247,10 @@ impl FileBank for ChainSdk {
     }
 
     // query_clear_user_list
-    async fn query_clear_user_list(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_clear_user_list(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = file_bank_storage().clear_user_list();
 
         query_storage(&query, block_hash).await
@@ -246,11 +304,12 @@ impl FileBank for ChainSdk {
         Ok(hash.to_string())
     }
 
-    async fn transfer_report(&self, deal_hash: Vec<&str>) -> Result<(String, AccountId32)> {
-        let hash: Vec<CPHash> = deal_hash
-            .iter()
-            .map(|hash| hash_from_string(hash))
-            .collect();
+    async fn transfer_report(&self, deal_hash: &str) -> Result<(String, AccountId32)> {
+        // let hash: Vec<CPHash> = deal_hash
+        //     .iter()
+        //     .map(|hash| hash_from_string(hash))
+        //     .collect();
+        let hash = CPHash(deal_hash.as_bytes().try_into().unwrap());
 
         let tx = file_bank_tx().transfer_report(hash);
 
@@ -298,17 +357,15 @@ impl FileBank for ChainSdk {
     }
 
     // delete_file
-    async fn delete_file(
-        &self,
-        pk: &[u8],
-        file_hash: Vec<String>,
-    ) -> Result<(String, Vec<CPHash>)> {
+    async fn delete_file(&self, pk: &[u8], file_hash: &str) -> Result<(String, CPHash)> {
         let account = account_from_slice(pk);
 
-        let file_hash: Vec<CPHash> = file_hash
-            .iter()
-            .map(|hash| hash_from_string(hash))
-            .collect();
+        // let file_hash: Vec<CPHash> = file_hash
+        //     .iter()
+        //     .map(|hash| hash_from_string(hash))
+        //     .collect();
+
+        let file_hash = CPHash(file_hash.as_bytes().try_into().unwrap());
 
         let tx = file_bank_tx().delete_file(account, file_hash);
 
@@ -318,7 +375,7 @@ impl FileBank for ChainSdk {
 
         let tx_hash = events.extrinsic_hash().to_string();
         if let Some(delete_file) = events.find_first::<DeleteFile>()? {
-            Ok((tx_hash, delete_file.file_hash_list))
+            Ok((tx_hash, delete_file.file_hash))
         } else {
             bail!("Unable to delete file");
         }
@@ -649,6 +706,24 @@ mod test {
                 assert!(true);
             }
             Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_delete_file(){
+        let sdk = init_chain();
+        let file_hash = "249160ce8fd6d4488a16e0ba6b787f5f07644c8aeec1a8d1e8c1fa809647b304";
+        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
+        let result = sdk.delete_file(&pk_bytes, file_hash).await;
+        match result {
+            Ok((r,h)) => {
+                dbg!(r, h);
+                assert!(true);
+            }
+            Err(err) => {
+                dbg!(err);
                 assert!(false);
             }
         }

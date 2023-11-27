@@ -8,8 +8,9 @@ use anyhow::{bail, Result};
 use async_trait::async_trait;
 use polkadot::{
     runtime_types::{
+        bounded_collections::bounded_vec::BoundedVec,
         pallet_tee_worker::types::{SgxAttestationReport, TeeWorkerInfo},
-        sp_core::{bounded::bounded_vec::BoundedVec, ed25519::Public as ed25519Public},
+        sp_core::ed25519::Public as ed25519Public,
     },
     tee_worker::{calls::TransactionApi, events::Exit, storage::StorageApi},
 };
@@ -27,10 +28,20 @@ fn tee_worker_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait TeeWorker {
-    async fn query_tee_worker_map(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<TeeWorkerInfo>>;
-    async fn query_bond_acc(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>>;
+    async fn query_tee_worker_map(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<TeeWorkerInfo>>;
+    async fn query_bond_acc(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>>;
     async fn query_tee_podr2_pk(&self, block_hash: Option<H256>) -> Result<Option<[u8; 270]>>;
-    async fn query_mr_enclave_whitelist(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<[u8; 64]>>>;
+    async fn query_mr_enclave_whitelist(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<[u8; 64]>>>;
     async fn register_tee_worker(
         &self,
         stash_account: &[u8],
@@ -48,7 +59,11 @@ impl TeeWorker for ChainSdk {
     /* Query functions */
 
     // query_tee_worker_map
-    async fn query_tee_worker_map(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<TeeWorkerInfo>> {
+    async fn query_tee_worker_map(
+        &self,
+        pk: &[u8],
+        block_hash: Option<H256>,
+    ) -> Result<Option<TeeWorkerInfo>> {
         let account = account_from_slice(pk);
         let query = tee_worker_storage().tee_worker_map(&account);
 
@@ -56,7 +71,10 @@ impl TeeWorker for ChainSdk {
     }
 
     // query_bond_acc
-    async fn query_bond_acc(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<AccountId32>>> {
+    async fn query_bond_acc(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<AccountId32>>> {
         let query = tee_worker_storage().bond_acc();
 
         query_storage(&query, block_hash).await
@@ -70,7 +88,10 @@ impl TeeWorker for ChainSdk {
     }
 
     // query_mr_enclave_whitelist
-    async fn query_mr_enclave_whitelist(&self, block_hash: Option<H256>) -> Result<Option<BoundedVec<[u8; 64]>>> {
+    async fn query_mr_enclave_whitelist(
+        &self,
+        block_hash: Option<H256>,
+    ) -> Result<Option<BoundedVec<[u8; 64]>>> {
         let query = tee_worker_storage().mr_enclave_whitelist();
 
         query_storage(&query, block_hash).await

@@ -1,12 +1,12 @@
 use anyhow::{anyhow, bail, Result};
 
 use subxt::{
-    blocks::ExtrinsicEvents,
+    blocks::{ExtrinsicEvents, Extrinsics},
     config::ExtrinsicParams,
     storage::{address::Yes, StorageAddress},
     tx::{Signer as SignerT, TxPayload},
     utils::{AccountId32, H256},
-    Config, PolkadotConfig,
+    Config, PolkadotConfig, OnlineClient,
 };
 
 use crate::{init_api, polkadot};
@@ -133,4 +133,12 @@ pub(crate) fn account_from_slice(pk: &[u8]) -> AccountId32 {
 pub(crate) fn hash_from_string(hash_str: &str) -> Hash {
     let hash_bytes = hex_string_to_bytes(hash_str);
     Hash(hash_bytes)
+}
+
+pub async fn get_extrinsics_at(block_hash: H256) -> Result<Extrinsics<PolkadotConfig, OnlineClient<PolkadotConfig>>> {
+    let api = init_api().await;
+
+    let block = api.blocks().at(block_hash).await?;
+    let extrinsics = block.body().await?.extrinsics();
+    Ok(extrinsics)
 }

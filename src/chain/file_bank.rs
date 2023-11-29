@@ -712,18 +712,16 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_delete_file(){
+    async fn test_delete_file() {
         let sdk = init_chain();
         let file_hash = "249160ce8fd6d4488a16e0ba6b787f5f07644c8aeec1a8d1e8c1fa809647b304";
         let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.delete_file(&pk_bytes, file_hash).await;
         match result {
-            Ok((r,h)) => {
-                dbg!(r, h);
+            Ok(_) => {
                 assert!(true);
             }
-            Err(err) => {
-                dbg!(err);
+            Err(_) => {
                 assert!(false);
             }
         }

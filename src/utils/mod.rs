@@ -123,7 +123,7 @@ where
     }
 }
 
-pub(crate) fn account_from_slice(pk: &[u8]) -> AccountId32 {
+pub fn account_from_slice(pk: &[u8]) -> AccountId32 {
     let mut pk_array = [0u8; 32];
     pk_array.copy_from_slice(&pk[..32]); // Ensure the slice is exactly 32 bytes
 
@@ -141,4 +141,18 @@ pub async fn get_extrinsics_at(block_hash: H256) -> Result<Extrinsics<PolkadotCo
     let block = api.blocks().at(block_hash).await?;
     let extrinsics = block.body().await?.extrinsics();
     Ok(extrinsics)
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // #[tokio::test]
+    // async fn test_get_extrinsics_at(){
+    //     let block_hash = "0x836cb396dc15e35c426e9eccc1709a0927ecd8809bd3d9ba4ca00fd344ca4d6b";
+    //     let hash = block_hex_string_to_h256(block_hash);
+    //     let extrinsics = get_extrinsics_at(hash).await;
+    //     extrinsics
+    // }
 }

@@ -4,7 +4,8 @@ use sp_keyring::sr25519::sr25519::Pair;
 use subxt::ext::sp_core::crypto::{
     AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec,
 };
-use subxt::ext::sp_core::Pair as sp_core_pair;
+use subxt::ext::sp_core::{Pair as sp_core_pair, ByteArray};
+use subxt::utils::AccountId32 as SubxtUtilAccountId32;
 
 const SS_PREFIX: [u8; 7] = [0x53, 0x53, 0x35, 0x38, 0x50, 0x52, 0x45];
 const SUBSTRATE_PREFIX: [u8; 1] = [0x2a];
@@ -111,6 +112,18 @@ pub fn get_ss58_address(account_str: &str) -> Result<String> {
     Ok(ss58_cess_address)
 }
 
+pub fn get_ss58_address_from_subxt_accountid32(account: SubxtUtilAccountId32) -> Result<String> {
+    let ss58_address = match AccountId32::from_slice(&account.0) {
+        Ok(ss58_address) => ss58_address,
+        Err(_) => bail!("Error"),
+    };
+    let address_type = Ss58AddressFormatRegistry::CessTestnetAccount as u16;
+    let ss58_cess_address =
+        ss58_address.to_ss58check_with_version(Ss58AddressFormat::custom(address_type));
+
+    Ok(ss58_cess_address)
+}
+
 pub fn get_pair_address_as_ss58_address(pair: Pair) -> Result<String> {
     let address_type = Ss58AddressFormatRegistry::CessTestnetAccount as u16;
     let ss58_cess_address = pair
@@ -124,6 +137,7 @@ mod test {
     use crate::{config::get_deoss_account, utils::account_from_slice};
 
     use super::parsing_public_key;
+    use super::{SubxtUtilAccountId32, get_ss58_address_from_subxt_accountid32};
 
     #[test]
     fn test_parsing_public_key() {
@@ -134,4 +148,16 @@ mod test {
             "5F2EcqaLtFps43aGFLHAkZ4RSHC6qAxZKdvg5bYH4uEo7Ufx"
         );
     }
+    #[test]
+    fn test_get_ss58_address_from_subxt_accountid32(){
+        let account = SubxtUtilAccountId32([44,237,227,3,163,58,80,236,155,150,17,162,47,85,153,202,120,76,8,151,23,35,43,161,189,88,201,0,134,112,249,66,],);
+        let ss58_account = get_ss58_address_from_subxt_accountid32(account);
+        let ss58_account = match ss58_account{
+            Ok(ss58_account) => ss58_account,
+            _ => "Error".to_string()
+        };
+        assert_eq!("cXfzZzcdn5b8gmsZ6vQvPvgcP7ZEMUsgKoxnXz4SRV6T6423B", &ss58_account);
+    }
+
+    
 }

@@ -89,9 +89,8 @@ pub trait FileBank {
         user: UserBrief,
         file_size: u128,
     ) -> Result<(String, UploadDeclaration)>;
-    async fn deal_reassign_miner(&self, deal_hash: &str, count: u8, life: u32) -> Result<String>;
     async fn ownership_transfer(&self, target_brief: UserBrief, file_hash: &str) -> Result<String>;
-    async fn transfer_report(&self, deal_hash: &str) -> Result<(String, AccountId32)>;
+    async fn transfer_report(&self, index: u8, deal_hash: &str) -> Result<(String, AccountId32)>;
     async fn calculate_end(&self, deal_hash: &str) -> Result<(String, CPHash)>;
     async fn replace_idle_space(
         &self,
@@ -281,17 +280,6 @@ impl FileBank for ChainSdk {
         }
     }
 
-    async fn deal_reassign_miner(&self, deal_hash: &str, count: u8, life: u32) -> Result<String> {
-        let hash = hash_from_string(deal_hash);
-        let tx = file_bank_tx().deal_reassign_miner(hash, count, life);
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
-    }
-
     async fn ownership_transfer(&self, target_brief: UserBrief, file_hash: &str) -> Result<String> {
         let hash = hash_from_string(file_hash);
 
@@ -304,14 +292,14 @@ impl FileBank for ChainSdk {
         Ok(hash.to_string())
     }
 
-    async fn transfer_report(&self, deal_hash: &str) -> Result<(String, AccountId32)> {
+    async fn transfer_report(&self, index: u8, deal_hash: &str) -> Result<(String, AccountId32)> {
         // let hash: Vec<CPHash> = deal_hash
         //     .iter()
         //     .map(|hash| hash_from_string(hash))
         //     .collect();
         let hash = CPHash(deal_hash.as_bytes().try_into().unwrap());
 
-        let tx = file_bank_tx().transfer_report(hash);
+        let tx = file_bank_tx().transfer_report(index, hash);
 
         let from = PairSigner::new(self.pair.clone());
 

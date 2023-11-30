@@ -1,5 +1,5 @@
 use super::ChainSdk;
-use super::{deoss::DeOss, file_bank::FileBank, sminer::SMiner};
+use super::{deoss::DeOss, file_bank::FileBank};
 use crate::config::{get_deoss_account, get_deoss_url};
 use crate::core::{
     erasure::{read_solomon_restore, reed_solomon},
@@ -22,7 +22,7 @@ use polkadot::{
     runtime_types::{
         bounded_collections::bounded_vec::BoundedVec,
         cp_cess_common::Hash,
-        pallet_file_bank::types::{MinerTaskList, SegmentList, UserBrief},
+        pallet_file_bank::types::{SegmentList, UserBrief},
     },
 };
 use reqwest::header::{HeaderMap, HeaderValue};
@@ -30,9 +30,7 @@ use reqwest::{Client, RequestBuilder};
 use std::fs::{metadata, remove_file, File as FFile};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use subxt::ext::sp_core::{Pair, H256};
-
-use libp2p::PeerId;
+use subxt::ext::sp_core::Pair;
 
 #[async_trait]
 pub trait File {
@@ -61,11 +59,6 @@ pub trait File {
         root_hash: &str,
         save_path: &str,
     ) -> Result<()>;
-    async fn query_assigned_miner_peer_id(
-        &self,
-        miner_task_list: Vec<MinerTaskList>,
-        block_hash: Option<H256>,
-    ) -> Result<Vec<PeerId>>;
 }
 
 #[async_trait]
@@ -293,33 +286,6 @@ impl File for ChainSdk {
         }
 
         Ok(())
-    }
-
-    async fn query_assigned_miner_peer_id(
-        &self,
-        miner_task_list: Vec<MinerTaskList>,
-        block_hash: Option<H256>,
-    ) -> Result<Vec<PeerId>> {
-        let mut peer_ids = Vec::new();
-
-        for v in miner_task_list {
-            let pk = &v.miner.0;
-            let miner_info = match self.query_miner_items(pk, block_hash).await {
-                Ok(value) => value,
-                Err(err) => bail!(err),
-            };
-
-            if let Some(miner_info) = miner_info {
-                let peer_id = match PeerId::from_bytes(&miner_info.peer_id) {
-                    Ok(peer_id) => peer_id,
-                    Err(err) => bail!(err),
-                };
-
-                peer_ids.push(peer_id);
-            }
-        }
-
-        Ok(peer_ids)
     }
 }
 

@@ -9,7 +9,6 @@ use async_trait::async_trait;
 use polkadot::{
     runtime_types::{
         bounded_collections::bounded_vec::BoundedVec,
-        cp_cess_common::PoISKey,
         pallet_sminer::types::{MinerInfo, RestoralTargetInfo, Reward},
     },
     sminer::{
@@ -61,8 +60,6 @@ pub trait SMiner {
         beneficiary: &[u8],
         peer_id: [u8; 38],
         staking_val: u128,
-        pois_key: PoISKey,
-        tee_sig: [u8; 256],
     ) -> Result<String>;
     async fn increase_collateral(&self, collaterals: u128) -> Result<(String, IncreaseCollateral)>;
     async fn update_beneficiary(&self, beneficiary: &[u8]) -> Result<String>;
@@ -167,12 +164,10 @@ impl SMiner for ChainSdk {
         beneficiary: &[u8],
         peer_id: [u8; 38],
         staking_val: u128,
-        pois_key: PoISKey,
-        tee_sig: [u8; 256],
     ) -> Result<String> {
         let account = account_from_slice(beneficiary);
 
-        let tx = sminer_tx().regnstk(account, peer_id, staking_val, pois_key, tee_sig);
+        let tx = sminer_tx().regnstk(account, peer_id, staking_val);
 
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;

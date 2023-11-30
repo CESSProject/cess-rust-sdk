@@ -10,7 +10,6 @@ use polkadot::{
     runtime_types::{
         bounded_collections::bounded_vec::BoundedVec,
         pallet_tee_worker::types::{SgxAttestationReport, TeeWorkerInfo},
-        sp_core::ed25519::Public as ed25519Public,
     },
     tee_worker::{calls::TransactionApi, events::Exit, storage::StorageApi},
 };
@@ -45,10 +44,10 @@ pub trait TeeWorker {
     async fn register_tee_worker(
         &self,
         stash_account: &[u8],
-        node_key: ed25519Public,
         peer_id: [u8; 38],
         podr2_pbk: [u8; 270],
         sgx_attestation_report: SgxAttestationReport,
+        end_point: BoundedVec<u8>,
     ) -> Result<String>;
     async fn update_whitelist(&self, mr_enclave: [u8; 64]) -> Result<String>;
     async fn exit(&self) -> Result<(String, Exit)>;
@@ -102,18 +101,18 @@ impl TeeWorker for ChainSdk {
     async fn register_tee_worker(
         &self,
         stash_account: &[u8],
-        node_key: ed25519Public,
         peer_id: [u8; 38],
         podr2_pbk: [u8; 270],
         sgx_attestation_report: SgxAttestationReport,
+        end_point: BoundedVec<u8>,
     ) -> Result<String> {
         let account = account_from_slice(stash_account);
         let tx = tee_worker_tx().register(
             account,
-            node_key,
             peer_id,
             podr2_pbk,
             sgx_attestation_report,
+            end_point
         );
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;

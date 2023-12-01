@@ -209,7 +209,7 @@ impl File for ChainSdk {
         headers.insert("Account", HeaderValue::from_str(&self.get_signature_acc())?);
         headers.insert("Message", HeaderValue::from_str(&message)?);
         headers.insert("Signature", HeaderValue::from_str(&sig.0.to_base58())?);
-        headers.insert("Content-Type", HeaderValue::from_str("multipart/form-data")?);
+        // headers.insert("Content-Type", HeaderValue::from_str("multipart/form-data")?);
 
         let client = match Client::builder().build() {
             Ok(client) => client,

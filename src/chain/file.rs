@@ -26,7 +26,7 @@ use polkadot::{
     },
 };
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, RequestBuilder};
+use reqwest::{Client, RequestBuilder, multipart};
 use std::fs::{metadata, remove_file, File as FFile};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -209,21 +209,42 @@ impl File for ChainSdk {
         headers.insert("Account", HeaderValue::from_str(&self.get_signature_acc())?);
         headers.insert("Message", HeaderValue::from_str(&message)?);
         headers.insert("Signature", HeaderValue::from_str(&sig.0.to_base58())?);
-        // headers.insert("Content-Type", HeaderValue::from_str("multipart/form-data")?);
+        
+        // Create multipart form data
+        let mut form = multipart::Form::new();
+            // .text("BucketName", bucket_name.to_string())
+            // .text("Account", self.get_signature_acc())
+            // .text("Message", message)
+            // .text("Signature", sig.0.to_base58());
 
+        let mut file = FFile::open(upload_file)?;
+        
+        let mut file_content = Vec::new();
+        file.read_to_end(&mut file_content)?;
+
+        let upload_file = upload_file.to_string().clone();
+        form = form.part(
+            "file", 
+            multipart::Part::stream(
+                file_content.clone()
+            )
+            .file_name(
+                upload_file
+            )
+        );
+
+        // Create multupart form here
         let client = match Client::builder().build() {
             Ok(client) => client,
             Err(err) => {
                 bail!("{}", err)
             }
         };
-        let request_builder: RequestBuilder = client.put(url).headers(headers);
+        let request_builder: RequestBuilder = client.put(url)
+            .headers(headers)
+            .multipart(form);
 
-        let mut file = FFile::open(upload_file)?;
-        let mut file_content = Vec::new();
-        file.read_to_end(&mut file_content)?;
-
-        let response = request_builder.body(file_content).send().await?;
+        let response = request_builder.send().await?;
         let status_code = response.status();
         let response_text = response.text().await?;
         if !status_code.is_success() {

@@ -212,10 +212,6 @@ impl File for ChainSdk {
         
         // Create multipart form data
         let mut form = multipart::Form::new();
-            // .text("BucketName", bucket_name.to_string())
-            // .text("Account", self.get_signature_acc())
-            // .text("Message", message)
-            // .text("Signature", sig.0.to_base58());
 
         let mut file = FFile::open(upload_file)?;
         

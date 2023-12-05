@@ -229,7 +229,6 @@ impl File for ChainSdk {
             )
         );
 
-        // Create multupart form here
         let client = match Client::builder().build() {
             Ok(client) => client,
             Err(err) => {

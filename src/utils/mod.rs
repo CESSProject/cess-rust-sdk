@@ -80,7 +80,7 @@ where
     }
 }
 
-pub(crate) async fn sign_and_sbmit_tx_default<Call, Signer, T>(
+pub async fn sign_and_sbmit_tx_default<Call, Signer, T>(
     tx: &Call,
     from: &Signer,
 ) -> Result<H256>
@@ -98,7 +98,7 @@ where
     }
 }
 
-pub(crate) async fn sign_and_submit_tx_then_watch_default<Call, Signer, T>(
+pub async fn sign_and_submit_tx_then_watch_default<Call, Signer, T>(
     tx: &Call,
     from: &Signer,
 ) -> Result<ExtrinsicEvents<PolkadotConfig>>

@@ -50,7 +50,7 @@ pub fn block_hex_string_to_h256(hex: &str) -> H256 {
     H256(hash_array)
 }
 
-pub(crate) async fn query_storage<'address, Address>(
+pub async fn query_storage<'address, Address>(
     query: &'address Address,
     block_hash: Option<H256>,
 ) -> Result<Option<<Address as StorageAddress>::Target>>

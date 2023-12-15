@@ -146,7 +146,12 @@ impl FileBank for ChainSdk {
         root_hash: &str,
         block_hash: Option<H256>,
     ) -> Result<Option<FileInfo>> {
-        let hash = CPHash(root_hash.as_bytes().try_into().expect("Expected a slice of length 64"));
+        let hash = CPHash(
+            root_hash
+                .as_bytes()
+                .try_into()
+                .expect("Expected a slice of length 64"),
+        );
         let query = file_bank_storage().file(hash);
 
         query_storage(&query, block_hash).await

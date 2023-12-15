@@ -92,7 +92,9 @@ fn append_bytes(b1: &[u8], b2: &[u8]) -> Vec<u8> {
 }
 
 pub fn build_simple_merkle_root_hash(segment_hash: &str) -> Result<String> {
-    let bytes = hex::decode(segment_hash)?;
+    let mut bytes = hex::decode(segment_hash)?;
+    let bytes_clone = bytes.clone();
+    bytes.extend_from_slice(&bytes_clone);
     let mut hasher = Sha256::new();
     hasher.update(&bytes);
     let hash = hasher.finalize();

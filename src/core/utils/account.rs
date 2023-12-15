@@ -4,7 +4,7 @@ use sp_keyring::sr25519::sr25519::Pair;
 use subxt::ext::sp_core::crypto::{
     AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec,
 };
-use subxt::ext::sp_core::{Pair as sp_core_pair, ByteArray};
+use subxt::ext::sp_core::{ByteArray, Pair as sp_core_pair};
 use subxt::utils::AccountId32 as SubxtUtilAccountId32;
 
 const SS_PREFIX: [u8; 7] = [0x53, 0x53, 0x35, 0x38, 0x50, 0x52, 0x45];
@@ -137,7 +137,7 @@ mod test {
     use crate::{config::get_deoss_account, utils::account_from_slice};
 
     use super::parsing_public_key;
-    use super::{SubxtUtilAccountId32, get_ss58_address_from_subxt_accountid32};
+    use super::{get_ss58_address_from_subxt_accountid32, SubxtUtilAccountId32};
 
     #[test]
     fn test_parsing_public_key() {
@@ -149,15 +149,19 @@ mod test {
         );
     }
     #[test]
-    fn test_get_ss58_address_from_subxt_accountid32(){
-        let account = SubxtUtilAccountId32([44,237,227,3,163,58,80,236,155,150,17,162,47,85,153,202,120,76,8,151,23,35,43,161,189,88,201,0,134,112,249,66,],);
+    fn test_get_ss58_address_from_subxt_accountid32() {
+        let account = SubxtUtilAccountId32([
+            44, 237, 227, 3, 163, 58, 80, 236, 155, 150, 17, 162, 47, 85, 153, 202, 120, 76, 8,
+            151, 23, 35, 43, 161, 189, 88, 201, 0, 134, 112, 249, 66,
+        ]);
         let ss58_account = get_ss58_address_from_subxt_accountid32(account);
-        let ss58_account = match ss58_account{
+        let ss58_account = match ss58_account {
             Ok(ss58_account) => ss58_account,
-            _ => "Error".to_string()
+            _ => "Error".to_string(),
         };
-        assert_eq!("cXfzZzcdn5b8gmsZ6vQvPvgcP7ZEMUsgKoxnXz4SRV6T6423B", &ss58_account);
+        assert_eq!(
+            "cXfzZzcdn5b8gmsZ6vQvPvgcP7ZEMUsgKoxnXz4SRV6T6423B",
+            &ss58_account
+        );
     }
-
-    
 }

@@ -14,11 +14,11 @@ pub const SIZE_1_KI_B: u32 = 1024;
 pub const SIZE_1_MI_B: u32 = 1024 * SIZE_1_KI_B;
 pub const SIZE_1_GI_B: u32 = 1024 * SIZE_1_MI_B;
 
-pub const SEGMENT_SIZE: u32 = 16 * SIZE_1_MI_B;
-pub const FRAEMENT_SIZE: u32 = 8 * SIZE_1_MI_B;
+pub const SEGMENT_SIZE: u32 = 64 * SIZE_1_MI_B;
+pub const FRAEMENT_SIZE: u32 = 16 * SIZE_1_MI_B;
 pub const BLOCK_NUMBER: u32 = 1024;
-pub const DATA_SHARDS: u32 = 2;
-pub const PAR_SHARDS: u32 = 1;
+pub const DATA_SHARDS: u32 = 4;
+pub const PAR_SHARDS: u32 = 2;
 
 #[derive(Default)]
 pub struct ChallengeInfo {
@@ -27,7 +27,7 @@ pub struct ChallengeInfo {
     pub start: u32,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct SegmentDataInfo {
     pub segment_hash: PathBuf,
     pub fragment_hash: Vec<PathBuf>,

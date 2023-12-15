@@ -6,7 +6,7 @@ use subxt::{
     storage::{address::Yes, StorageAddress},
     tx::{Signer as SignerT, TxPayload},
     utils::{AccountId32, H256},
-    Config, PolkadotConfig, OnlineClient,
+    Config, OnlineClient, PolkadotConfig,
 };
 
 use crate::{init_api, polkadot};
@@ -80,10 +80,7 @@ where
     }
 }
 
-pub async fn sign_and_sbmit_tx_default<Call, Signer, T>(
-    tx: &Call,
-    from: &Signer,
-) -> Result<H256>
+pub async fn sign_and_sbmit_tx_default<Call, Signer, T>(tx: &Call, from: &Signer) -> Result<H256>
 where
     Call: TxPayload,
     Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig>,
@@ -135,14 +132,15 @@ pub(crate) fn hash_from_string(hash_str: &str) -> Hash {
     Hash(hash_bytes)
 }
 
-pub async fn get_extrinsics_at(block_hash: H256) -> Result<Extrinsics<PolkadotConfig, OnlineClient<PolkadotConfig>>> {
+pub async fn get_extrinsics_at(
+    block_hash: H256,
+) -> Result<Extrinsics<PolkadotConfig, OnlineClient<PolkadotConfig>>> {
     let api = init_api().await;
 
     let block = api.blocks().at(block_hash).await?;
     let extrinsics = block.body().await?.extrinsics();
     Ok(extrinsics)
 }
-
 
 #[cfg(test)]
 mod test {

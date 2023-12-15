@@ -26,15 +26,14 @@ use polkadot::{
     },
 };
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, RequestBuilder, multipart};
-use std::fs::{metadata, remove_file, File as FFile};
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::path::{Path, PathBuf};
+use reqwest::{multipart, Client, RequestBuilder};
+use std::fs::{metadata, File as FFile};
+use std::io::{Read, Write};
+use std::path::PathBuf;
 use subxt::ext::sp_core::Pair;
 
 #[async_trait]
 pub trait File {
-    async fn processing_data(file: &str) -> Result<(Vec<SegmentDataInfo>, String)>;
     async fn generate_storage_order(
         &self,
         root_hash: &str,
@@ -63,47 +62,6 @@ pub trait File {
 
 #[async_trait]
 impl File for ChainSdk {
-    async fn processing_data(file: &str) -> Result<(Vec<SegmentDataInfo>, String)> {
-        let segment_paths = match cut_file(file) {
-            Ok(segment_paths) => segment_paths,
-            Err(err) => {
-                bail!("[cutfile]: {}", err)
-            }
-        };
-
-        let mut segment_data_info = Vec::new();
-
-        for v in &segment_paths {
-            let segment_hash = v.clone();
-            let fragment_hash = match reed_solomon(v.to_str().unwrap()) {
-                Ok(fragment_hash) => fragment_hash,
-                Err(err) => {
-                    bail!("[ReedSolomon]: {}", err)
-                }
-            };
-
-            segment_data_info.push(SegmentDataInfo {
-                segment_hash,
-                fragment_hash,
-            });
-
-            remove_file(v)?;
-        }
-
-        let hash = if segment_paths.len() == 1 {
-            build_simple_merkle_root_hash(
-                &Path::new(&segment_paths[0])
-                    .file_name()
-                    .unwrap()
-                    .to_string_lossy(),
-            )?
-        } else {
-            build_merkle_root_hash(extract_segmenthash(&segment_paths))?
-        };
-
-        Ok((segment_data_info, hash))
-    }
-
     async fn generate_storage_order(
         &self,
         root_hash: &str,
@@ -209,24 +167,19 @@ impl File for ChainSdk {
         headers.insert("Account", HeaderValue::from_str(&self.get_signature_acc())?);
         headers.insert("Message", HeaderValue::from_str(&message)?);
         headers.insert("Signature", HeaderValue::from_str(&sig.0.to_base58())?);
-        
+
         // Create multipart form data
         let mut form = multipart::Form::new();
 
         let mut file = FFile::open(upload_file)?;
-        
+
         let mut file_content = Vec::new();
         file.read_to_end(&mut file_content)?;
 
         let upload_file = upload_file.to_string().clone();
         form = form.part(
-            "file", 
-            multipart::Part::stream(
-                file_content.clone()
-            )
-            .file_name(
-                upload_file
-            )
+            "file",
+            multipart::Part::stream(file_content.clone()).file_name(upload_file),
         );
 
         let client = match Client::builder().build() {
@@ -235,9 +188,7 @@ impl File for ChainSdk {
                 bail!("{}", err)
             }
         };
-        let request_builder: RequestBuilder = client.put(url)
-            .headers(headers)
-            .multipart(form);
+        let request_builder: RequestBuilder = client.put(url).headers(headers).multipart(form);
 
         let response = request_builder.send().await?;
         let status_code = response.status();
@@ -304,64 +255,6 @@ impl File for ChainSdk {
 
         Ok(())
     }
-}
-
-fn cut_file(file: &str) -> Result<Vec<PathBuf>> {
-    let fstat = metadata(file)?;
-    if fstat.is_dir() {
-        bail!("not a file");
-    }
-    if fstat.len() == 0 {
-        bail!("empty file");
-    }
-
-    let base_dir = Path::new(file)
-        .parent()
-        .ok_or_else(|| anyhow!("Invalid parent directory"))?;
-    let segment_count = (fstat.len() + SEGMENT_SIZE as u64 - 1) / SEGMENT_SIZE as u64;
-
-    let mut segments = Vec::with_capacity(segment_count as usize);
-    let mut buf = vec![0u8; SEGMENT_SIZE as usize];
-    let mut f = FFile::open(file)?;
-
-    for i in 0..segment_count {
-        f.seek(SeekFrom::Start(SEGMENT_SIZE as u64 * i))?;
-        let num = f.read(&mut buf)?;
-        if num == 0 {
-            return Err(anyhow!("read file is empty"));
-        }
-
-        if num < SEGMENT_SIZE as usize {
-            if i + 1 != segment_count {
-                return Err(anyhow!("read file err"));
-            }
-            let rand_str = rand_str(SEGMENT_SIZE as usize - num);
-            buf[num..].copy_from_slice(rand_str.as_bytes());
-        }
-
-        let hash = calc_sha256(&buf)?;
-        let segment_path = base_dir.join(hash);
-        let mut segment_file = FFile::create(&segment_path)?;
-        segment_file.write_all(&buf)?;
-
-        segments.push(segment_path);
-    }
-
-    Ok(segments)
-}
-
-fn extract_segmenthash(segment: &[PathBuf]) -> Vec<String> {
-    let mut segmenthash = Vec::with_capacity(segment.len());
-    for seg in segment.iter() {
-        let base = Path::new(seg)
-            .file_name()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default()
-            .to_string();
-        segmenthash.push(base);
-    }
-    segmenthash
 }
 
 #[cfg(test)]

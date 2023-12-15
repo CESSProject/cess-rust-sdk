@@ -112,7 +112,7 @@ impl TeeWorker for ChainSdk {
             peer_id,
             podr2_pbk,
             sgx_attestation_report,
-            end_point
+            end_point,
         );
         let from = PairSigner::new(self.pair.clone());
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;

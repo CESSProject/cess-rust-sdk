@@ -12,7 +12,7 @@ use super::{
     erasure::reed_solomon,
     hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash},
     pattern::{SegmentDataInfo, SEGMENT_SIZE},
-    utils::{hash::calc_sha256, str::rand_str},
+    utils::hash::calc_sha256,
 };
 
 pub fn processing_data(file: &str) -> Result<(Vec<SegmentDataInfo>, String)> {

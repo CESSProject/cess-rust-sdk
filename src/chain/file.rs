@@ -2,19 +2,17 @@ use super::ChainSdk;
 use super::{deoss::DeOss, file_bank::FileBank};
 use crate::config::{get_deoss_account, get_deoss_url};
 use crate::core::{
-    erasure::{read_solomon_restore, reed_solomon},
-    hashtree::{build_merkle_root_hash, build_simple_merkle_root_hash},
-    pattern::{SegmentDataInfo, SEGMENT_SIZE},
+    erasure::read_solomon_restore,
+    pattern::SegmentDataInfo,
     utils::{
         account::parsing_public_key,
         bucket::check_bucket_name,
-        hash::calc_sha256,
-        str::{get_random_code, rand_str},
+        str::get_random_code,
     },
 };
 use crate::polkadot;
 use crate::utils::account_from_slice;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use async_trait::async_trait;
 use base58::ToBase58;
 use polkadot::{

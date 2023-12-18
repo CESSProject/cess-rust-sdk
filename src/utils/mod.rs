@@ -57,7 +57,7 @@ pub async fn query_storage<'address, Address>(
 where
     Address: StorageAddress<IsFetchable = Yes> + 'address,
 {
-    let api = init_api().await;
+    let api = init_api().await?;
     if let Some(block_hash) = block_hash {
         match api.storage().at(block_hash).fetch(query).await {
             Ok(value) => Ok(value),
@@ -87,7 +87,7 @@ where
     T: Config,
     <T::ExtrinsicParams as ExtrinsicParams<T::Index, T::Hash>>::OtherParams: Default,
 {
-    let api = init_api().await;
+    let api = init_api().await?;
 
     match api.tx().sign_and_submit_default(tx, from).await {
         Ok(hash) => Ok(hash),
@@ -104,7 +104,7 @@ where
     Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig>,
     T: Config,
 {
-    let api = init_api().await;
+    let api = init_api().await?;
 
     match api.tx().sign_and_submit_then_watch_default(tx, from).await {
         Ok(result) => match result.wait_for_finalized_success().await {
@@ -135,22 +135,9 @@ pub(crate) fn hash_from_string(hash_str: &str) -> Hash {
 pub async fn get_extrinsics_at(
     block_hash: H256,
 ) -> Result<Extrinsics<PolkadotConfig, OnlineClient<PolkadotConfig>>> {
-    let api = init_api().await;
+    let api = init_api().await?;
 
     let block = api.blocks().at(block_hash).await?;
     let extrinsics = block.body().await?.extrinsics();
     Ok(extrinsics)
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    // #[tokio::test]
-    // async fn test_get_extrinsics_at(){
-    //     let block_hash = "0x836cb396dc15e35c426e9eccc1709a0927ecd8809bd3d9ba4ca00fd344ca4d6b";
-    //     let hash = block_hex_string_to_h256(block_hash);
-    //     let extrinsics = get_extrinsics_at(hash).await;
-    //     extrinsics
-    // }
 }

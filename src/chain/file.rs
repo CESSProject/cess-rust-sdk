@@ -4,11 +4,7 @@ use crate::config::{get_deoss_account, get_deoss_url};
 use crate::core::{
     erasure::read_solomon_restore,
     pattern::SegmentDataInfo,
-    utils::{
-        account::parsing_public_key,
-        bucket::check_bucket_name,
-        str::get_random_code,
-    },
+    utils::{account::parsing_public_key, bucket::check_bucket_name, str::get_random_code},
 };
 use crate::polkadot;
 use crate::utils::account_from_slice;

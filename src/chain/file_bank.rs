@@ -557,7 +557,7 @@ mod test {
     #[tokio::test]
     async fn test_query_file_metadata() {
         let sdk = init_chain();
-        let root_hash = "";
+        let root_hash = "c9cb11fe652f1959627d4426c9424fcdcd815383475bcea1306df79575ea00be";
         let result = sdk.query_file_metadata(root_hash, None).await;
         match result {
             Ok(_) => {

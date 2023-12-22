@@ -5,6 +5,7 @@ pub mod config;
 pub mod core;
 pub mod utils;
 use anyhow::{bail, Result};
+use log::info;
 pub use subxt;
 
 use config::get_url;
@@ -22,10 +23,12 @@ async fn init_api() -> Result<OnlineClient<PolkadotConfig>> {
     ];
 
     for alternate_url in alternate_urls {
+        info!(target: "InitAPI", "Connecting to RPC {}", alternate_url);
         tokio::select! {
             // Concurrently try an alternate URL
             result = OnlineClient::<PolkadotConfig>::from_url(alternate_url) => {
                 if let Ok(api) = result {
+                    info!(target: "InitAPI", "Connected to {}", alternate_url);
                     return Ok(api);
                 }
             },

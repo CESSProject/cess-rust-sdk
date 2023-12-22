@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use lazy_static::lazy_static;
 
-const URL: &str = "wss://testnet-rpc0.cess.cloud:443/ws/";
+const URL: &str = "ws://127.0.0.1:9944";
 const PUBLIC_DEOSS: &str = "http://deoss-pub-gateway.cess.cloud/";
 const PUBLIC_DEOSS_ACCOUNT: &str = "cXhwBytXqrZLr1qM5NHJhCzEMckSTzNKw17ci2aHft6ETSQm9";
 

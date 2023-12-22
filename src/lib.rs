@@ -18,6 +18,7 @@ async fn init_api() -> Result<OnlineClient<PolkadotConfig>> {
     let url = get_url();
     let alternate_urls: Vec<&str> = vec![
         &url,
+        "wss://testnet-rpc0.cess.cloud:443/ws/",
         "wss://testnet-rpc1.cess.cloud:443/ws/",
         "wss://testnet-rpc2.cess.cloud:443/ws/",
     ];

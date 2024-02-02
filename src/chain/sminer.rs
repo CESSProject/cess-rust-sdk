@@ -55,17 +55,9 @@ pub trait SMiner {
         pk: &[u8],
         block_hash: Option<H256>,
     ) -> Result<Option<RestoralTargetInfo<AccountId32, u32>>>;
-    async fn regnstk(
-        &self,
-        beneficiary: &[u8],
-        peer_id: [u8; 38],
-        staking_val: u128,
-    ) -> Result<String>;
-    async fn increase_collateral(&self, collaterals: u128) -> Result<(String, IncreaseCollateral)>;
     async fn update_beneficiary(&self, beneficiary: &[u8]) -> Result<String>;
     async fn update_peer_id(&self, peer_id: [u8; 38]) -> Result<String>;
     async fn receive_reward(&self) -> Result<String>;
-    async fn miner_exit_prep(&self) -> Result<(String, MinerExitPrep)>;
     async fn miner_exit(&self, miner: &[u8]) -> Result<String>;
     async fn miner_withdraw(&self) -> Result<String>;
 }
@@ -158,38 +150,6 @@ impl SMiner for ChainSdk {
     }
 
     /* Transactional functions */
-    // regnstk
-    async fn regnstk(
-        &self,
-        beneficiary: &[u8],
-        peer_id: [u8; 38],
-        staking_val: u128,
-    ) -> Result<String> {
-        let account = account_from_slice(beneficiary);
-
-        let tx = sminer_tx().regnstk(account, peer_id, staking_val);
-
-        let from = PairSigner::new(self.pair.clone());
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
-    }
-
-    // increase_collateral
-    async fn increase_collateral(&self, collaterals: u128) -> Result<(String, IncreaseCollateral)> {
-        let tx = sminer_tx().increase_collateral(collaterals);
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        let tx_hash = events.extrinsic_hash().to_string();
-        if let Some(collateral) = events.find_first::<IncreaseCollateral>()? {
-            Ok((tx_hash, collateral))
-        } else {
-            bail!("Unable to increase collateral");
-        }
-    }
 
     // update_beneficiary
     async fn update_beneficiary(&self, beneficiary: &[u8]) -> Result<String> {
@@ -218,21 +178,6 @@ impl SMiner for ChainSdk {
         let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
 
         Ok(hash.to_string())
-    }
-
-    async fn miner_exit_prep(&self) -> Result<(String, MinerExitPrep)> {
-        let tx = sminer_tx().miner_exit_prep();
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        let tx_hash = events.extrinsic_hash().to_string();
-        if let Some(exit_prep) = events.find_first::<MinerExitPrep>()? {
-            Ok((tx_hash, exit_prep))
-        } else {
-            bail!("Unable to execute miner exit prep");
-        }
     }
 
     async fn miner_exit(&self, miner: &[u8]) -> Result<String> {

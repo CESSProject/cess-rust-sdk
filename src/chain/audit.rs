@@ -15,7 +15,7 @@ use polkadot::{
     runtime_types::{
         bounded_collections::{bounded_vec::BoundedVec, weak_bounded_vec::WeakBoundedVec},
         cp_bloom_filter::BloomFilter,
-        pallet_audit::{sr25519::app_sr25519::Public, types::ChallengeInfo},
+        pallet_audit::types::ChallengeInfo,
     },
 };
 use subxt::ext::sp_core::H256;
@@ -31,32 +31,17 @@ fn audit_tx() -> TransactionApi {
 
 #[async_trait]
 pub trait Audit {
-    async fn query_verify_duration(&self, block_hash: Option<H256>) -> Result<Option<u32>>;
-    async fn query_cur_authority_index(&self, block_hash: Option<H256>) -> Result<Option<u16>>;
-    async fn query_keys(&self, block_hash: Option<H256>) -> Result<Option<WeakBoundedVec<Public>>>;
     async fn query_challenge_snapshot(
         &self,
         pk: &[u8],
         block_hash: Option<H256>,
     ) -> Result<Option<ChallengeInfo>>;
-    async fn query_counted_idle_failed(
-        &self,
-        pk: &[u8],
-        block_hash: Option<H256>,
-    ) -> Result<Option<u32>>;
     async fn query_counted_service_failed(
         &self,
         pk: &[u8],
         block_hash: Option<H256>,
     ) -> Result<Option<u32>>;
     async fn query_counted_clear(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<u8>>;
-    async fn query_challenge_era(&self, block_hash: Option<H256>) -> Result<Option<u32>>;
-    async fn query_verify_result(
-        &self,
-        pk: &[u8],
-        block_hash: Option<H256>,
-    ) -> Result<Option<(Option<bool>, Option<bool>)>>;
-    async fn query_verify_reassign_count(&self, block_hash: Option<H256>) -> Result<Option<u8>>;
     async fn submit_idle_proof(
         &self,
         idle_prove: BoundedVec<u8>,
@@ -65,48 +50,11 @@ pub trait Audit {
         &self,
         service_prove: BoundedVec<u8>,
     ) -> Result<(String, SubmitServiceProof)>;
-    async fn submit_verify_idle_result(
-        &self,
-        total_prove_hash: BoundedVec<u8>,
-        front: u64,
-        rear: u64,
-        accumulator: &[u8; 256],
-        idle_result: bool,
-        signature: &[u8; 256],
-        tee_acc: &[u8],
-    ) -> Result<String>;
-    async fn submit_verify_service_result(
-        &self,
-        service_result: bool,
-        signature: &[u8; 256],
-        service_bloom_filter: BloomFilter,
-        miner: &[u8],
-    ) -> Result<String>;
 }
 
 #[async_trait]
 impl Audit for ChainSdk {
     /* Query functions */
-    // query_verify_duration
-    async fn query_verify_duration(&self, block_hash: Option<H256>) -> Result<Option<u32>> {
-        let query = audit_storage().verify_duration();
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_cur_authority_index
-    async fn query_cur_authority_index(&self, block_hash: Option<H256>) -> Result<Option<u16>> {
-        let query = audit_storage().cur_authority_index();
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_keys
-    async fn query_keys(&self, block_hash: Option<H256>) -> Result<Option<WeakBoundedVec<Public>>> {
-        let query = audit_storage().keys();
-
-        query_storage(&query, block_hash).await
-    }
 
     // query_challenge_snapshot
     async fn query_challenge_snapshot(
@@ -117,19 +65,6 @@ impl Audit for ChainSdk {
         let account = account_from_slice(pk);
 
         let query = audit_storage().challenge_snap_shot(&account);
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_counted_idle_failed
-    async fn query_counted_idle_failed(
-        &self,
-        pk: &[u8],
-        block_hash: Option<H256>,
-    ) -> Result<Option<u32>> {
-        let account = account_from_slice(pk);
-
-        let query = audit_storage().counted_idle_failed(&account);
 
         query_storage(&query, block_hash).await
     }
@@ -152,33 +87,6 @@ impl Audit for ChainSdk {
         let account = account_from_slice(pk);
 
         let query = audit_storage().counted_clear(&account);
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_challenge_era
-    async fn query_challenge_era(&self, block_hash: Option<H256>) -> Result<Option<u32>> {
-        let query = audit_storage().challenge_era();
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_verify_result
-    async fn query_verify_result(
-        &self,
-        pk: &[u8],
-        block_hash: Option<H256>,
-    ) -> Result<Option<(Option<bool>, Option<bool>)>> {
-        let account = account_from_slice(pk);
-
-        let query = audit_storage().verify_result(&account);
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_verify_reassign_count
-    async fn query_verify_reassign_count(&self, block_hash: Option<H256>) -> Result<Option<u8>> {
-        let query = audit_storage().verify_reassign_count();
 
         query_storage(&query, block_hash).await
     }
@@ -221,58 +129,6 @@ impl Audit for ChainSdk {
         } else {
             bail!("Unable to submit service proof");
         }
-    }
-
-    // submit_verify_idle_result
-    async fn submit_verify_idle_result(
-        &self,
-        total_prove_hash: BoundedVec<u8>,
-        front: u64,
-        rear: u64,
-        accumulator: &[u8; 256],
-        idle_result: bool,
-        signature: &[u8; 256],
-        tee_acc: &[u8],
-    ) -> Result<String> {
-        let account = account_from_slice(tee_acc);
-        let tx = audit_tx().submit_verify_idle_result(
-            total_prove_hash,
-            front,
-            rear,
-            *accumulator,
-            idle_result,
-            *signature,
-            account,
-        );
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
-    }
-
-    // submit_verify_service_result
-    async fn submit_verify_service_result(
-        &self,
-        service_result: bool,
-        signature: &[u8; 256],
-        service_bloom_filter: BloomFilter,
-        miner: &[u8],
-    ) -> Result<String> {
-        let account = account_from_slice(miner);
-        let tx = audit_tx().submit_verify_service_result(
-            service_result,
-            *signature,
-            service_bloom_filter,
-            account,
-        );
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
     }
 }
 

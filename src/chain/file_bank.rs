@@ -10,7 +10,7 @@ use polkadot::{
     file_bank::{
         calls::TransactionApi,
         events::{
-            CalculateEnd, ClaimRestoralOrder, CreateBucket, DeleteBucket, DeleteFile,
+            ClaimRestoralOrder, CreateBucket, DeleteBucket, DeleteFile,
             GenerateRestoralOrder, TransferReport, UploadDeclaration,
         },
         storage::StorageApi,
@@ -52,11 +52,6 @@ pub trait FileBank {
         pk: &[u8],
         block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<UserFileSliceInfo>>>;
-    async fn query_pending_replacements(
-        &self,
-        pk: &[u8],
-        block_hash: Option<H256>,
-    ) -> Result<Option<u128>>;
     async fn query_bucket_info(
         &self,
         pk: &[u8],
@@ -91,18 +86,7 @@ pub trait FileBank {
     ) -> Result<(String, UploadDeclaration)>;
     async fn ownership_transfer(&self, target_brief: UserBrief, file_hash: &str) -> Result<String>;
     async fn transfer_report(&self, index: u8, deal_hash: &str) -> Result<(String, AccountId32)>;
-    async fn calculate_end(&self, deal_hash: &str) -> Result<(String, CPHash)>;
-    async fn replace_idle_space(
-        &self,
-        idle_sig_info: SpaceProofInfo<AccountId32>,
-        sign: &[u8; 256],
-    ) -> Result<String>;
     async fn delete_file(&self, pk: &[u8], file_hash: &str) -> Result<(String, CPHash)>;
-    async fn cert_idle_space(
-        &self,
-        idle_sig_info: SpaceProofInfo<AccountId32>,
-        sign: &[u8; 256],
-    ) -> Result<String>;
     async fn create_bucket(&self, pk: &[u8], name: &str) -> Result<(String, CreateBucket)>;
     async fn delete_bucket(&self, pk: &[u8], name: &str) -> Result<(String, DeleteBucket)>;
     async fn generate_restoral_order(
@@ -121,8 +105,6 @@ pub trait FileBank {
         restoral_fragment: &str,
     ) -> Result<String>;
     async fn restoral_order_complete(&self, fragment_hash: &str) -> Result<String>;
-    async fn root_clear_failed_count(&self) -> Result<String>;
-    async fn miner_clear_failed_count(&self) -> Result<String>;
 }
 
 #[async_trait]
@@ -166,19 +148,6 @@ impl FileBank for ChainSdk {
         let account = account_from_slice(pk);
 
         let query = file_bank_storage().user_hold_file_list(&account);
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_pending_replacements
-    async fn query_pending_replacements(
-        &self,
-        pk: &[u8],
-        block_hash: Option<H256>,
-    ) -> Result<Option<u128>> {
-        let account = account_from_slice(pk);
-
-        let query = file_bank_storage().pending_replacements(&account);
 
         query_storage(&query, block_hash).await
     }
@@ -318,37 +287,6 @@ impl FileBank for ChainSdk {
         }
     }
 
-    async fn calculate_end(&self, deal_hash: &str) -> Result<(String, CPHash)> {
-        let hash = hash_from_string(deal_hash);
-
-        let tx = file_bank_tx().calculate_end(hash);
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        let tx_hash = events.extrinsic_hash().to_string();
-        if let Some(calculate_end) = events.find_first::<CalculateEnd>()? {
-            Ok((tx_hash, calculate_end.file_hash))
-        } else {
-            bail!("Unable to transfer");
-        }
-    }
-
-    async fn replace_idle_space(
-        &self,
-        idle_sig_info: SpaceProofInfo<AccountId32>,
-        sign: &[u8; 256],
-    ) -> Result<String> {
-        let tx = file_bank_tx().replace_idle_space(idle_sig_info, *sign);
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
-    }
-
     // delete_file
     async fn delete_file(&self, pk: &[u8], file_hash: &str) -> Result<(String, CPHash)> {
         let account = account_from_slice(pk);
@@ -372,20 +310,6 @@ impl FileBank for ChainSdk {
         } else {
             bail!("Unable to delete file");
         }
-    }
-
-    async fn cert_idle_space(
-        &self,
-        idle_sig_info: SpaceProofInfo<AccountId32>,
-        sign: &[u8; 256],
-    ) -> Result<String> {
-        let tx = file_bank_tx().cert_idle_space(idle_sig_info, *sign);
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
     }
 
     // create_bucket
@@ -502,25 +426,6 @@ impl FileBank for ChainSdk {
         Ok(hash.to_string())
     }
 
-    async fn root_clear_failed_count(&self) -> Result<String> {
-        let tx = file_bank_tx().root_clear_failed_count();
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
-    }
-
-    async fn miner_clear_failed_count(&self) -> Result<String> {
-        let tx = file_bank_tx().miner_clear_failed_count();
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
-
-        Ok(hash.to_string())
-    }
 }
 
 #[cfg(test)]
@@ -574,21 +479,6 @@ mod test {
         let sdk = init_chain();
         let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
         let result = sdk.query_user_hold_file_list(&pk_bytes, None).await;
-        match result {
-            Ok(_) => {
-                assert!(true);
-            }
-            Err(_) => {
-                assert!(false);
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_query_pending_replacements() {
-        let sdk = init_chain();
-        let pk_bytes = parsing_public_key(ACCOUNT_ADDRESS).unwrap();
-        let result = sdk.query_pending_replacements(&pk_bytes, None).await;
         match result {
             Ok(_) => {
                 assert!(true);

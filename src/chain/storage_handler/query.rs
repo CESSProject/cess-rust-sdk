@@ -12,6 +12,8 @@ use crate::utils::account_from_slice;
 use crate::utils::get_ss58_address;
 use crate::{impl_api_provider, query_storage, StorageAddress, Yes, H256};
 
+use crate::chain::Query;
+
 use subxt::ext::codec::Encode;
 use subxt::utils::AccountId32;
 
@@ -24,24 +26,13 @@ impl_api_provider!(
 
 pub struct StorageQuery;
 
-impl StorageQuery {
+impl Query for StorageQuery {
     fn get_api() -> StorageApi {
         crate::core::get_api::<StorageApiProvider>()
     }
+}
 
-    async fn execute_query<'address, Address>(
-        query: &'address Address,
-        block_hash: Option<H256>,
-    ) -> Result<Option<<Address as StorageAddress>::Target>, Box<dyn std::error::Error>>
-    where
-        Address: StorageAddress<IsFetchable = Yes> + 'address,
-    {
-        match query_storage(query, block_hash).await {
-            Ok(result) => Ok(result),
-            Err(err) => Err(format!("Query failed: {}", err).into()),
-        }
-    }
-
+impl StorageQuery {
     pub async fn territory_key(
         token: &str,
         block_hash: Option<H256>,

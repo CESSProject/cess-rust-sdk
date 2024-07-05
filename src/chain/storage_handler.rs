@@ -1,159 +1,225 @@
-use super::ChainSdk;
-use crate::polkadot;
-use crate::utils::{
-    account_from_slice, query_storage, sign_and_sbmit_tx_default,
-    sign_and_submit_tx_then_watch_default,
-};
-use anyhow::{bail, Result};
-use async_trait::async_trait;
-use polkadot::{
-    runtime_types::pallet_storage_handler::types::OwnedSpaceDetails,
-    storage_handler::{
-        calls::TransactionApi,
-        events::{BuySpace, ExpansionSpace, RenewalSpace},
-        storage::StorageApi,
-    },
-};
-use subxt::ext::sp_core::H256;
-use subxt::tx::PairSigner;
+use std::str::FromStr;
 
-fn storage_handler_storage() -> StorageApi {
+use crate::core::ApiProvider;
+use crate::polkadot::storage_handler::calls::types::territory_rename;
+use crate::polkadot::{
+    self,
+    runtime_types::bounded_collections::bounded_vec::BoundedVec,
+    runtime_types::pallet_storage_handler::types::{ConsignmentInfo, OrderInfo, TerritoryInfo},
+    storage_handler::{calls::TransactionApi, storage::StorageApi},
+};
+
+use crate::utils::account_from_slice;
+use crate::utils::get_ss58_address;
+use crate::{impl_api_provider, query_storage, H256};
+
+use subxt::ext::codec::Encode;
+use subxt::utils::AccountId32;
+
+// impl ApiProvider for StorageApiProvider
+impl_api_provider!(
+    StorageApiProvider,
+    StorageApi,
     polkadot::storage().storage_handler()
-}
+);
 
-fn storage_handler_tx() -> TransactionApi {
+// impl ApiProvider for TransactionApiProvider
+impl_api_provider!(
+    TransactionApiProvider,
+    TransactionApi,
     polkadot::tx().storage_handler()
-}
+);
 
-#[async_trait]
-pub trait StorageHandler {
-    async fn query_user_owned_space(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OwnedSpaceDetails>>;
-    async fn query_unit_price(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
-    async fn query_total_power(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
-    async fn query_total_space(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
-    async fn query_purchased_space(&self, block_hash: Option<H256>) -> Result<Option<u128>>;
-    async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)>;
-    async fn expansion_space(&self, gib_count: u32) -> Result<(String, ExpansionSpace)>;
-    async fn renewal_space(&self, days: u32) -> Result<(String, RenewalSpace)>;
-    async fn update_price(&self) -> Result<String>;
-}
+pub struct StorageQuery;
 
-#[async_trait]
-impl StorageHandler for ChainSdk {
-    /* Query functions */
-    // query_user_owned_space
-    async fn query_user_owned_space(&self, pk: &[u8], block_hash: Option<H256>) -> Result<Option<OwnedSpaceDetails>> {
-        let account = account_from_slice(pk);
-        let query = storage_handler_storage().user_owned_space(&account);
-
-        query_storage(&query, block_hash).await
+impl StorageQuery {
+    fn get_api() -> StorageApi {
+        crate::core::get_api::<StorageApiProvider>()
     }
 
-    // query_unit_price
-    async fn query_unit_price(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
-        let query = storage_handler_storage().unit_price();
+    pub async fn territory_key(
+        token: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<(String, String)>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let token = H256::from_str(token).unwrap();
+        let query = api.territory_key(token);
 
-        query_storage(&query, block_hash).await
-    }
-
-    // query_total_power
-    async fn query_total_power(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
-        let query = storage_handler_storage().total_idle_space();
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_total_space
-    async fn query_total_space(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
-        let query = storage_handler_storage().total_service_space();
-
-        query_storage(&query, block_hash).await
-    }
-
-    // query_purchased_space
-    async fn query_purchased_space(&self, block_hash: Option<H256>) -> Result<Option<u128>> {
-        let query = storage_handler_storage().purchased_space();
-
-        query_storage(&query, block_hash).await
-    }
-
-    /* Transactional functions */
-
-    async fn buy_space(&self, gib_count: u32) -> Result<(String, BuySpace)> {
-        let tx = storage_handler_tx().buy_space(gib_count);
-
-        let from = PairSigner::new(self.pair.clone());
-
-        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        let tx_hash = events.extrinsic_hash().to_string();
-        if let Some(space) = events.find_first::<BuySpace>()? {
-            Ok((tx_hash, space))
-        } else {
-            bail!("Unable to buy space");
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => {
+                    let account = get_ss58_address(&value.0.to_string())?;
+                    let territory: String = String::from_utf8(value.1 .0).unwrap();
+                    Ok(Some((account, territory)))
+                }
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
         }
     }
 
-    async fn expansion_space(&self, gib_count: u32) -> Result<(String, ExpansionSpace)> {
-        let tx = storage_handler_tx().expansion_space(gib_count);
+    pub async fn territory(
+        account: &str,
+        territory_name: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<TerritoryInfo>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let account = AccountId32::from_str(account)?;
+        let territory_name = territory_name.as_bytes().to_vec();
+        let query = api.territory(account, BoundedVec(territory_name));
 
-        let from = PairSigner::new(self.pair.clone());
-
-        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        let tx_hash = events.extrinsic_hash().to_string();
-        if let Some(space) = events.find_first::<ExpansionSpace>()? {
-            Ok((tx_hash, space))
-        } else {
-            bail!("Unable to expand space");
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
         }
     }
 
-    async fn renewal_space(&self, days: u32) -> Result<(String, RenewalSpace)> {
-        let tx = storage_handler_tx().renewal_space(days);
+    pub async fn consignment(
+        token: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<ConsignmentInfo>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let token = H256::from_str(token).unwrap();
+        let query = api.consignment(token);
 
-        let from = PairSigner::new(self.pair.clone());
-
-        let events = sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        let tx_hash = events.extrinsic_hash().to_string();
-        if let Some(space) = events.find_first::<RenewalSpace>()? {
-            Ok((tx_hash, space))
-        } else {
-            bail!("Unable to renew space");
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
         }
     }
 
-    async fn update_price(&self) -> Result<String> {
-        let tx = storage_handler_tx().update_price();
-        let from = PairSigner::new(self.pair.clone());
-        let hash = sign_and_sbmit_tx_default(&tx, &from).await?;
+    pub async fn territory_frozen(
+        block_number: u32,
+        token: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<bool>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let token = H256::from_str(token).unwrap();
+        let query = api.territory_frozen(block_number, token);
 
-        Ok(hash.to_string())
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::StorageHandler;
-    use crate::chain::ChainSdk;
-
-    const MNEMONIC: &str =
-        "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
-
-    fn init_chain() -> ChainSdk {
-        ChainSdk::new(MNEMONIC, "service_name")
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
     }
 
-    #[tokio::test]
-    async fn test_buy_space() {
-        let sdk = init_chain();
-        let result = sdk.buy_space(1).await;
-        if let Err(e) = result {
-            println!("Error: {:?}", e);
-            assert!(false);
-        } else {
-            assert!(true);
+    pub async fn territory_frozen_counter(
+        block_number: u32,
+        block_hash: Option<H256>,
+    ) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let query = api.territory_frozen_counter(block_number);
+
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    pub async fn territory_expired(
+        block_number: u32,
+        token: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<bool>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let token = H256::from_str(token).unwrap();
+        let query = api.territory_expired(block_number, token);
+
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    pub async fn unit_price(
+        block_hash: Option<H256>,
+    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let query = api.unit_price();
+
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    pub async fn total_power(
+        block_hash: Option<H256>,
+    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let query = api.total_idle_space();
+
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    pub async fn total_space(
+        block_hash: Option<H256>,
+    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let query = api.total_service_space();
+
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    pub async fn purchased_space(
+        block_hash: Option<H256>,
+    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let query = api.purchased_space();
+
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    pub async fn pay_order(
+        order_hash: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<OrderInfo>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let order_hash = order_hash.as_bytes().to_vec();
+        let query = api.pay_order(BoundedVec(order_hash));
+
+        match query_storage(&query, block_hash).await {
+            Ok(result) => match result {
+                Some(value) => Ok(Some(value)),
+                None => Ok(None),
+            },
+            Err(err) => Err(format!("Query failed: {}", err).into()),
         }
     }
 }

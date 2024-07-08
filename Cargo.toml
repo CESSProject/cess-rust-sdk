@@ -9,9 +9,11 @@ edition = "2021"
 async-trait = "0.1.80"
 dotenv = "0.15.0"
 futures = "0.3.30"
+hex = "0.4.3"
 log = "0.4.22"
 reqwest = "0.12.5"
 serde = { version = "1.0.203", features = ["derive"] }
+sp-keyring = "38.0.0"
 subxt = { git = "https://github.com/paritytech/subxt", tag="v0.37.0", features=["substrate-compat"]}
 tokio = { version = "1.38.0", features = ["full"] }
 

@@ -8,13 +8,12 @@ use crate::polkadot::{
     storage_handler::storage::StorageApi,
 };
 
-use crate::utils::account_from_slice;
+// use crate::utils::account_from_slice;
 use crate::utils::get_ss58_address;
-use crate::{impl_api_provider, query_storage, StorageAddress, Yes, H256};
+use crate::{impl_api_provider, H256};
 
 use crate::chain::Query;
 
-use subxt::ext::codec::Encode;
 use subxt::utils::AccountId32;
 
 // impl ApiProvider for StorageApiProvider
@@ -27,7 +26,9 @@ impl_api_provider!(
 pub struct StorageQuery;
 
 impl Query for StorageQuery {
-    fn get_api() -> StorageApi {
+    type Api = StorageApi;
+
+    fn get_api() -> Self::Api {
         crate::core::get_api::<StorageApiProvider>()
     }
 }

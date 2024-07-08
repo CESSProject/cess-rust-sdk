@@ -1,11 +1,19 @@
 pub mod storage_handler;
 
-use crate::polkadot::storage_handler::storage::StorageApi;
+use subxt::{
+    blocks::ExtrinsicEvents,
+    tx::{PairSigner, Payload, Signer as SignerT},
+    Config, PolkadotConfig,
+};
 
-use crate::{query_storage, StorageAddress, Yes, H256};
+use subxt::ext::sp_core::sr25519::Pair;
+
+use crate::{init_api, StorageAddress, Yes, H256};
 
 trait Query {
-    fn get_api() -> StorageApi;
+    type Api;
+
+    fn get_api() -> Self::Api;
 
     async fn execute_query<'address, Address>(
         query: &'address Address,
@@ -14,9 +22,76 @@ trait Query {
     where
         Address: StorageAddress<IsFetchable = Yes> + 'address,
     {
-        match query_storage(query, block_hash).await {
+        match Self::query_storage(query, block_hash).await {
             Ok(result) => Ok(result),
             Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    async fn query_storage<'address, Address>(
+        query: &'address Address,
+        block_hash: Option<H256>,
+    ) -> Result<Option<<Address as StorageAddress>::Target>, String>
+    where
+        Address: StorageAddress<IsFetchable = Yes> + 'address,
+    {
+        let api = init_api().await?;
+        if let Some(block_hash) = block_hash {
+            match api.storage().at(block_hash).fetch(query).await {
+                Ok(value) => Ok(value),
+                Err(_) => Err("Failed to retrieve data from storage".into()),
+            }
+        } else {
+            match api.storage().at_latest().await {
+                Ok(mid_result) => match mid_result.fetch(query).await {
+                    Ok(value) => Ok(value),
+                    Err(_) => Err("Failed to retrieve data from storage".into()),
+                },
+                Err(_) => Err("Failed to retrieve data from storage".into()),
+            }
+        }
+    }
+}
+
+trait Call {
+    type Api;
+
+    fn get_api() -> Self::Api;
+    fn get_pair_signer(&self) -> PairSigner<PolkadotConfig, Pair>;
+
+    fn find_first<E: subxt::events::StaticEvent>(
+        event: ExtrinsicEvents<PolkadotConfig>,
+    ) -> Result<(String, E), Box<dyn std::error::Error>> {
+        let hash = event.extrinsic_hash();
+        match event.find_first::<E>() {
+            Ok(data) => {
+                if let Some(event_data) = data {
+                    Ok((format!("0x{}", hex::encode(hash.0)), event_data))
+                } else {
+                    Err("Error: Unable to fetch territory".into())
+                }
+            }
+            Err(e) => Err(format!("{}", e).into()),
+        }
+    }
+
+    async fn sign_and_submit_tx_then_watch_default<Call, Signer, T>(
+        tx: &Call,
+        from: &Signer,
+    ) -> Result<ExtrinsicEvents<PolkadotConfig>, Box<dyn std::error::Error>>
+    where
+        Call: Payload,
+        Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig>,
+        T: Config,
+    {
+        let api = init_api().await?;
+
+        match api.tx().sign_and_submit_then_watch_default(tx, from).await {
+            Ok(result) => match result.wait_for_finalized_success().await {
+                Ok(r) => Ok(r),
+                Err(e) => Err(format!("{}", e).into()),
+            },
+            Err(e) => Err(format!("{}", e).into()),
         }
     }
 }

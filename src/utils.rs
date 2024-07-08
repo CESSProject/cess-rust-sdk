@@ -1,5 +1,5 @@
 use subxt::ext::sp_core::crypto::{
-    AccountId32, ByteArray, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec,
+    AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec,
 };
 use subxt::utils::AccountId32 as SubxtUtilsAccountId32;
 

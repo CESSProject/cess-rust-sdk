@@ -32,7 +32,7 @@ async fn try_connect(
 async fn try_default_connect() -> Result<OnlineClient<PolkadotConfig>, Box<dyn std::error::Error>> {
     dotenv().ok();
 
-    let mut urls = vec![
+    let mut urls = [
         "wss://testnet-rpc0.cess.cloud:443/ws/",
         "wss://testnet-rpc1.cess.cloud:443/ws/",
         "wss://testnet-rpc2.cess.cloud:443/ws/",
@@ -44,7 +44,7 @@ async fn try_default_connect() -> Result<OnlineClient<PolkadotConfig>, Box<dyn s
     if let Ok(is_mainnet) = env::var("RPC_NETWORK").map(|val| val == "mainnet") {
         if is_mainnet {
             // TODO: Replace with mainnet URLs when mainnet launch
-            urls = vec![
+            urls = [
                 "wss://devnet-rpc.cess.cloud/ws/", // This is devnet
             ]
             .iter()
@@ -92,28 +92,4 @@ pub async fn init_api() -> Result<OnlineClient<PolkadotConfig>, String> {
     };
 
     Ok(api)
-}
-
-pub async fn query_storage<'address, Address>(
-    query: &'address Address,
-    block_hash: Option<H256>,
-) -> Result<Option<<Address as StorageAddress>::Target>, String>
-where
-    Address: StorageAddress<IsFetchable = Yes> + 'address,
-{
-    let api = init_api().await?;
-    if let Some(block_hash) = block_hash {
-        match api.storage().at(block_hash).fetch(query).await {
-            Ok(value) => Ok(value),
-            Err(_) => Err("Failed to retrieve data from storage".into()),
-        }
-    } else {
-        match api.storage().at_latest().await {
-            Ok(mid_result) => match mid_result.fetch(query).await {
-                Ok(value) => Ok(value),
-                Err(_) => Err("Failed to retrieve data from storage".into()),
-            },
-            Err(_) => Err("Failed to retrieve data from storage".into()),
-        }
-    }
 }

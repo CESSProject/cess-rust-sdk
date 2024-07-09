@@ -1,3 +1,4 @@
+pub mod file_bank;
 pub mod storage_handler;
 
 use subxt::{

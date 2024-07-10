@@ -1,4 +1,8 @@
 pub mod account;
+pub mod bucket;
+pub mod file;
+pub mod ip;
+pub mod str;
 
 use subxt::ext::sp_core::crypto::{
     AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec,

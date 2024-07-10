@@ -1,6 +1,7 @@
 #![recursion_limit = "1024"]
 
 pub mod chain;
+pub mod constants;
 pub mod core;
 pub mod utils;
 pub use subxt;

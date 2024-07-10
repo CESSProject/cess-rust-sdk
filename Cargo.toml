@@ -7,13 +7,18 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.80"
+blake2 = "0.10.6"
+bs58 = "0.5.1"
 dotenv = "0.15.0"
 futures = "0.3.30"
 hex = "0.4.3"
 log = "0.4.22"
+reed-solomon-erasure = "6.0.0"
 reqwest = "0.12.5"
 serde = { version = "1.0.203", features = ["derive"] }
-sp-keyring = "38.0.0"
+
+# Important! sp-keyring version should depend on same version of sp-core exported from subxt
+sp-keyring = "34.0.0"
 subxt = { git = "https://github.com/paritytech/subxt", tag="v0.37.0", features=["substrate-compat"]}
 tokio = { version = "1.38.0", features = ["full"] }
 

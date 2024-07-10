@@ -8,7 +8,6 @@ use crate::polkadot::{
     storage_handler::storage::StorageApi,
 };
 
-// use crate::utils::account_from_slice;
 use crate::utils::get_ss58_address;
 use crate::{impl_api_provider, H256};
 

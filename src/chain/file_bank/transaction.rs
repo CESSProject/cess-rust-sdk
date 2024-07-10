@@ -254,6 +254,4 @@ impl StorageTransaction {
 
         Self::find_first::<RecoveryCompleted>(event)
     }
-
-
 }

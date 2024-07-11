@@ -10,12 +10,18 @@ use core::Error;
 use dotenv::dotenv;
 use futures::future;
 use log::info;
+use once_cell::sync::Lazy;
 use std::env;
+use std::sync::Arc;
 use subxt::utils::Yes;
 use subxt::{
     config::substrate::H256, storage::Address as StorageAddress, OnlineClient, PolkadotConfig,
 };
+use tokio::sync::Mutex;
 use tokio::task;
+
+static CHAIN_API: Lazy<Arc<Mutex<Option<OnlineClient<PolkadotConfig>>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(None)));
 
 #[subxt::subxt(runtime_metadata_path = "metadata/metadata.scale")]
 pub mod polkadot {}
@@ -71,25 +77,31 @@ pub async fn init_api() -> Result<OnlineClient<PolkadotConfig>, Error> {
 
     let url = env::var("RPC_URL").ok();
 
-    let api = if let Some(url) = url {
-        match try_connect(Some(&url)).await {
-            Ok(api) => {
-                info!(target: "SDK", "Connected to: {}", url);
-                api
-            }
-            Err(_) => match try_default_connect().await {
+    let mut chain_api = CHAIN_API.lock().await;
+
+    if let Some(ref api) = *chain_api {
+        Ok(api.clone())
+    } else {
+        let api = if let Some(url) = url {
+            match try_connect(Some(&url)).await {
                 Ok(api) => {
-                    info!(target: "SDK", "Connected to official RPC server");
+                    info!(target: "SDK", "Connected to: {}", url);
                     api
                 }
-                Err(_) => return Err("All connections failed.".into()),
-            },
-        }
-    } else {
-        try_connect(None)
-            .await
-            .map_err(|_| Error::Custom("All connections failed.".into()))?
-    };
-
-    Ok(api)
+                Err(_) => match try_default_connect().await {
+                    Ok(api) => {
+                        info!(target: "SDK", "Connected to official RPC server");
+                        api
+                    }
+                    Err(_) => return Err("All connections failed.".into()),
+                },
+            }
+        } else {
+            try_connect(None)
+                .await
+                .map_err(|_| Error::Custom("All connections failed.".into()))?
+        };
+        *chain_api = Some(api.clone());
+        Ok(api)
+    }
 }

@@ -676,6 +676,7 @@ dependencies = [
  "libp2p",
  "libp2p-core",
  "log",
+ "once_cell",
  "rand",
  "reed-solomon-erasure",
  "regex",

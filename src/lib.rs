@@ -75,12 +75,12 @@ pub async fn init_api() -> Result<OnlineClient<PolkadotConfig>, String> {
     let api = if let Some(url) = url {
         match try_connect(Some(&url)).await {
             Ok(api) => {
-                info!(target: "SDK" ,"Connected to: {}", url);
+                info!(target: "SDK", "Connected to: {}", url);
                 api
             }
             Err(_) => match try_default_connect().await {
                 Ok(api) => {
-                    info!(target: "SDK" ,"Connected to official RPC server");
+                    info!(target: "SDK", "Connected to official RPC server");
                     api
                 }
                 Err(_) => return Err("All connections failed.".into()),

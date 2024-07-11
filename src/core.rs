@@ -1,3 +1,5 @@
+use subxt::Error as SubxtError;
+
 pub trait ApiProvider {
     type Api;
 
@@ -38,4 +40,28 @@ macro_rules! impl_api_provider {
             }
         }
     };
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Error: {0}")]
+    Custom(String),
+
+    #[error(transparent)]
+    Subxt(#[from] SubxtError),
+
+    #[error(transparent)]
+    Application(#[from] Box<dyn std::error::Error + Send + Sync>),
+}
+
+impl From<&str> for Error {
+    fn from(s: &str) -> Self {
+        Error::Custom(s.to_string())
+    }
+}
+
+impl From<String> for Error {
+    fn from(s: String) -> Self {
+        Error::Custom(s)
+    }
 }

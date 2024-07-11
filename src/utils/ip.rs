@@ -1,5 +1,4 @@
 use libp2p::core::multiaddr::{Multiaddr, Protocol};
-
 use std::{net::IpAddr, str::FromStr};
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::Resolver;

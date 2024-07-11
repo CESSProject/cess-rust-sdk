@@ -2,17 +2,19 @@ pub mod file_bank;
 pub mod oss;
 pub mod storage_handler;
 
+use crate::core::Error;
+use crate::{init_api, StorageAddress, Yes, H256};
+use async_trait::async_trait;
+use std::marker::Sync;
+use subxt::ext::sp_core::sr25519::Pair;
 use subxt::{
     blocks::ExtrinsicEvents,
     tx::{PairSigner, Payload, Signer as SignerT},
     Config, PolkadotConfig,
 };
 
-use subxt::ext::sp_core::sr25519::Pair;
-
-use crate::{init_api, StorageAddress, Yes, H256};
-
-trait Query {
+#[async_trait]
+pub trait Query {
     type Api;
 
     fn get_api() -> Self::Api;
@@ -22,7 +24,7 @@ trait Query {
         block_hash: Option<H256>,
     ) -> Result<Option<<Address as StorageAddress>::Target>, Box<dyn std::error::Error>>
     where
-        Address: StorageAddress<IsFetchable = Yes> + 'address,
+        Address: StorageAddress<IsFetchable = Yes> + Sync + 'address,
     {
         match Self::query_storage(query, block_hash).await {
             Ok(result) => Ok(result),
@@ -33,11 +35,13 @@ trait Query {
     async fn query_storage<'address, Address>(
         query: &'address Address,
         block_hash: Option<H256>,
-    ) -> Result<Option<<Address as StorageAddress>::Target>, String>
+    ) -> Result<Option<<Address as StorageAddress>::Target>, Error>
     where
-        Address: StorageAddress<IsFetchable = Yes> + 'address,
+        Address: StorageAddress<IsFetchable = Yes> + Sync + 'address,
     {
-        let api = init_api().await?;
+        let api = init_api()
+            .await
+            .map_err(|_| Error::Custom("All connections failed.".into()))?;
         if let Some(block_hash) = block_hash {
             match api.storage().at(block_hash).fetch(query).await {
                 Ok(value) => Ok(value),
@@ -55,7 +59,8 @@ trait Query {
     }
 }
 
-trait Call {
+#[async_trait]
+pub trait Call {
     type Api;
 
     fn get_api() -> Self::Api;
@@ -82,8 +87,8 @@ trait Call {
         from: &Signer,
     ) -> Result<ExtrinsicEvents<PolkadotConfig>, Box<dyn std::error::Error>>
     where
-        Call: Payload,
-        Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig>,
+        Call: Payload + Sync,
+        Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig> + Sync,
         T: Config,
     {
         let api = init_api().await?;

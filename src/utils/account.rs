@@ -1,12 +1,12 @@
-use crate::subxt::{
+use blake2::{Blake2b512, Digest};
+use sp_keyring::sr25519::sr25519::Pair;
+use subxt::{
     ext::sp_core::{
         crypto::{AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec},
         ByteArray, Pair as sp_core_pair,
     },
     utils::AccountId32 as SubxtUtilsAccountId32,
 };
-use blake2::{Blake2b512, Digest};
-use sp_keyring::sr25519::sr25519::Pair;
 
 const SS_PREFIX: [u8; 7] = [0x53, 0x53, 0x35, 0x38, 0x50, 0x52, 0x45];
 const SUBSTRATE_PREFIX: [u8; 1] = [0x2a];

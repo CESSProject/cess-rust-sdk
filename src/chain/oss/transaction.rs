@@ -7,7 +7,6 @@ use crate::polkadot::{
     oss::events::{Authorize, CancelAuthorize, OssDestroy, OssRegister, OssUpdate},
     runtime_types::bounded_collections::bounded_vec::BoundedVec,
 };
-
 use std::str::FromStr;
 use subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
 use subxt::ext::subxt_core::utils::AccountId32;

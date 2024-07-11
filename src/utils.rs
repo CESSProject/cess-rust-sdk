@@ -4,15 +4,14 @@ pub mod file;
 pub mod ip;
 pub mod str;
 
+use crate::init_api;
+use crate::polkadot::runtime_types::cp_cess_common::Hash;
 use subxt::{
     blocks::Extrinsics,
     ext::sp_core::crypto::{AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec},
     utils::H256,
     OnlineClient, PolkadotConfig,
 };
-
-use crate::init_api;
-use crate::polkadot::runtime_types::cp_cess_common::Hash;
 
 pub fn get_ss58_address(account_str: &str) -> Result<String, Box<dyn std::error::Error>> {
     let ss58_address = AccountId32::from_string(account_str)?;

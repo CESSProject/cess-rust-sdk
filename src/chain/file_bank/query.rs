@@ -1,5 +1,4 @@
-use std::str::FromStr;
-
+use crate::chain::Query;
 use crate::core::ApiProvider;
 use crate::polkadot::{
     self,
@@ -11,12 +10,9 @@ use crate::polkadot::{
         },
     },
 };
-
 use crate::utils::hash_from_string;
 use crate::{impl_api_provider, H256};
-
-use crate::chain::Query;
-
+use std::str::FromStr;
 use subxt::utils::AccountId32;
 
 // impl ApiProvider for StorageApiProvider

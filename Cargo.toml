@@ -24,6 +24,7 @@ serde = { version = "1.0.203", features = ["derive"] }
 # Important! sp-keyring version should depend on same version of sp-core exported from subxt
 sp-keyring = "34.0.0"
 subxt = { git = "https://github.com/paritytech/subxt", tag="v0.37.0", features=["substrate-compat"]}
+thiserror = "1.0.61"
 tokio = { version = "1.38.0", features = ["full"] }
 trust-dns-resolver = "0.23.2"
 uuid = { version = "1.10.0", features = ["v4", "fast-rng", "macro-diagnostics"] }

@@ -6,6 +6,7 @@ pub mod core;
 pub mod utils;
 pub use subxt;
 
+use core::Error;
 use dotenv::dotenv;
 use futures::future;
 use log::info;
@@ -19,9 +20,7 @@ use tokio::task;
 #[subxt::subxt(runtime_metadata_path = "metadata/metadata.scale")]
 pub mod polkadot {}
 
-async fn try_connect(
-    url: Option<&str>,
-) -> Result<OnlineClient<PolkadotConfig>, Box<dyn std::error::Error>> {
+async fn try_connect(url: Option<&str>) -> Result<OnlineClient<PolkadotConfig>, Error> {
     let api = match url {
         Some(url) => OnlineClient::<PolkadotConfig>::from_url(url).await?,
         None => OnlineClient::<PolkadotConfig>::new().await?,
@@ -30,7 +29,7 @@ async fn try_connect(
     Ok(api)
 }
 
-async fn try_default_connect() -> Result<OnlineClient<PolkadotConfig>, Box<dyn std::error::Error>> {
+async fn try_default_connect() -> Result<OnlineClient<PolkadotConfig>, Error> {
     dotenv().ok();
 
     let mut urls = [
@@ -67,7 +66,7 @@ async fn try_default_connect() -> Result<OnlineClient<PolkadotConfig>, Box<dyn s
     }
 }
 
-pub async fn init_api() -> Result<OnlineClient<PolkadotConfig>, String> {
+pub async fn init_api() -> Result<OnlineClient<PolkadotConfig>, Error> {
     dotenv().ok();
 
     let url = env::var("RPC_URL").ok();
@@ -89,7 +88,7 @@ pub async fn init_api() -> Result<OnlineClient<PolkadotConfig>, String> {
     } else {
         try_connect(None)
             .await
-            .map_err(|_| "All connections failed.")?
+            .map_err(|_| Error::Custom("All connections failed.".into()))?
     };
 
     Ok(api)

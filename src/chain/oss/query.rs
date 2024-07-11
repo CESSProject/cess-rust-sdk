@@ -1,16 +1,13 @@
 use std::str::FromStr;
 
+use crate::chain::Query;
 use crate::core::ApiProvider;
 use crate::polkadot::{
     self,
     oss::storage::StorageApi,
     runtime_types::{bounded_collections::bounded_vec::BoundedVec, pallet_oss::types::OssInfo},
 };
-
 use crate::{impl_api_provider, H256};
-
-use crate::chain::Query;
-
 use subxt::utils::AccountId32;
 
 // impl ApiProvider for StorageApiProvider

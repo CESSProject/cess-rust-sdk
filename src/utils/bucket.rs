@@ -1,8 +1,6 @@
-use regex::Regex;
-
-use crate::constants::{MAX_BUCKET_NAME_LENGHT, MIN_BUCKET_NAME_LENGTH};
-
 use super::ip::is_valid_ip;
+use crate::constants::{MAX_BUCKET_NAME_LENGHT, MIN_BUCKET_NAME_LENGTH};
+use regex::Regex;
 
 pub fn check_bucket_name(name: &str) -> bool {
     if name.len() < MIN_BUCKET_NAME_LENGTH || name.len() > MAX_BUCKET_NAME_LENGHT {

@@ -1,3 +1,4 @@
+pub mod audit;
 pub mod file_bank;
 pub mod oss;
 pub mod storage_handler;

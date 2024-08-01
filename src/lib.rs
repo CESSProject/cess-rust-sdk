@@ -39,6 +39,7 @@ async fn try_default_connect() -> Result<OnlineClient<PolkadotConfig>, Error> {
     dotenv().ok();
 
     let mut urls = [
+        "wss://testnet-rpc.cess.cloud:443/ws/",
         "wss://testnet-rpc0.cess.cloud:443/ws/",
         "wss://testnet-rpc1.cess.cloud:443/ws/",
         "wss://testnet-rpc2.cess.cloud:443/ws/",

@@ -52,10 +52,16 @@ impl StorageTransaction {
         &self,
         gib_count: u32,
         territory_name: &str,
+        days: u32,
     ) -> Result<(TxHash, MintTerritory), Box<dyn std::error::Error>> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
-        let tx = api.mint_territory(gib_count, BoundedVec(territory_name));
+
+        if days < 30 {
+            return Err("Invalid input: The number of days must be 30 or more.".into());
+        }
+
+        let tx = api.mint_territory(gib_count, BoundedVec(territory_name), days);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
 

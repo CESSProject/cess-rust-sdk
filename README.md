@@ -1,19 +1,18 @@
 <div align="center">
 
-# Rust sdk for CESS network
+# Rust SDK for CESS Network
 
-The rust sdk implementation of the CESS network, which provides RPC calls, status queries, block transactions and other functions.
+</div>
+The Rust SDK implementation for the CESS network provides RPC calls, status queries, block transactions, and other functions.
 
 ## 📝 Reporting Vulnerability
 
-To report any bugs or suggestions, please join [CESS discord](https://discord.gg/mYHTMfBwNS) to communicate with us.
+If you find any system errors or have suggestions for improvements, please submit an issue or a pull request (PR) on GitHub. You can also join the [CESS discord](https://discord.gg/mYHTMfBwNS) to communicate with us directly.
 
 ## 📢 Announcement
 **CESS test network rpc endpoints**
 ```
-wss://testnet-rpc0.cess.cloud/ws/
-wss://testnet-rpc1.cess.cloud/ws/
-wss://testnet-rpc2.cess.cloud/ws/
+wss://testnet-rpc.cess.cloud/ws/
 ```
 **CESS test network bootstrap node**
 ```
@@ -22,5 +21,5 @@ _dnsaddr.boot-kldr-testnet.cess.cloud
 
 ## 🚰 CESS test network faucet
 ```
-https://testnet-faucet.cess.cloud/
+https://www.cess.network/faucet.html
 ```

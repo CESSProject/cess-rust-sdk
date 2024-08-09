@@ -10,12 +10,8 @@ use crate::polkadot::{
     },
     runtime_types::bounded_collections::bounded_vec::BoundedVec,
     runtime_types::cp_bloom_filter::BloomFilter,
-    // runtime_types::pallet_audit::types::,
 };
-
-
 use subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
-
 use subxt::tx::PairSigner;
 use subxt::PolkadotConfig;
 

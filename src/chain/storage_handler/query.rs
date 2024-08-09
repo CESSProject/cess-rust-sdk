@@ -60,6 +60,28 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    pub async fn territories_by_account(
+        account: &str,
+        block_hash: Option<H256>,
+    ) -> Result<Option<Vec<TerritoryInfo>>, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let account = AccountId32::from_str(account)?;
+        let query = api.territory_iter1(account);
+
+        let mut stream = Self::execute_iter(query, block_hash).await?;
+        let mut results = Vec::new();
+        while let Some(result) = stream.next().await {
+            let key_value = result?;
+            results.push(key_value.value);
+        }
+
+        if results.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(results))
+        }
+    }
+
     pub async fn consignment(
         token: &str,
         block_hash: Option<H256>,

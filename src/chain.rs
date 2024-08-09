@@ -7,7 +7,9 @@ use crate::core::Error;
 use crate::{init_api, StorageAddress, Yes, H256};
 use async_trait::async_trait;
 use std::marker::Sync;
+use subxt::backend::StreamOfResults;
 use subxt::ext::sp_core::sr25519::Pair;
+use subxt::storage::StorageKeyValuePair;
 use subxt::{
     blocks::ExtrinsicEvents,
     tx::{PairSigner, Payload, Signer as SignerT},
@@ -58,6 +60,47 @@ pub trait Query {
             }
         }
     }
+
+    async fn execute_iter<Address>(
+        query: Address,
+        block_hash: Option<H256>,
+    ) -> Result<StreamOfResults<StorageKeyValuePair<Address>>, Box<dyn std::error::Error>>
+    where
+        Address: StorageAddress<IsIterable = Yes> + 'static + Send,
+        Address::Keys: 'static + Sized,
+    {
+        match Self::query_iter_storage(query, block_hash).await {
+            Ok(result) => Ok(result),
+            Err(err) => Err(format!("Query failed: {}", err).into()),
+        }
+    }
+
+    async fn query_iter_storage<Address>(
+        query: Address,
+        block_hash: Option<H256>,
+    ) -> Result<StreamOfResults<StorageKeyValuePair<Address>>, Error>
+    where
+        Address: StorageAddress<IsIterable = Yes> + 'static + Send,
+        Address::Keys: 'static + Sized,
+    {
+        let api = init_api()
+            .await
+            .map_err(|_| Error::Custom("All connections failed.".into()))?;
+        if let Some(block_hash) = block_hash {
+            match api.storage().at(block_hash).iter(query).await {
+                Ok(value) => Ok(value),
+                Err(_) => Err("Failed to retrieve data from storage".into()),
+            }
+        } else {
+            match api.storage().at_latest().await {
+                Ok(mid_result) => match mid_result.iter(query).await {
+                    Ok(value) => Ok(value),
+                    Err(_) => Err("Failed to retrieve data from storage".into()),
+                },
+                Err(_) => Err("Failed to retrieve data from storage".into()),
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -76,7 +119,7 @@ pub trait Call {
                 if let Some(event_data) = data {
                     Ok((format!("0x{}", hex::encode(hash.0)), event_data))
                 } else {
-                    Err("Error: Unable to fetch event data!".into())
+                    Err("Error: Unable to fetch event".into())
                 }
             }
             Err(e) => Err(format!("{}", e).into()),

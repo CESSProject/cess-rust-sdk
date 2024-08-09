@@ -76,7 +76,7 @@ pub trait Call {
                 if let Some(event_data) = data {
                     Ok((format!("0x{}", hex::encode(hash.0)), event_data))
                 } else {
-                    Err("Error: Unable to fetch territory".into())
+                    Err("Error: Unable to fetch event data!".into())
                 }
             }
             Err(e) => Err(format!("{}", e).into()),

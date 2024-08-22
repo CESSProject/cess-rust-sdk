@@ -1,7 +1,7 @@
 use crate::chain::Call;
 use crate::core::ApiProvider;
 use crate::impl_api_provider;
-use crate::polkadot::oss::calls::types::proxy_authorzie::{AuthPuk, Sig};
+use crate::polkadot::oss::calls::types::proxy_authorzie::Sig;
 use crate::polkadot::runtime_types::pallet_oss::types::ProxyAuthPayload;
 use crate::polkadot::{
     self,
@@ -104,12 +104,13 @@ impl StorageTransaction {
 
     pub async fn proxy_authorize(
         &self,
-        auth_puk: AuthPuk,
+        account: &str,
         sig: Sig,
         payload: ProxyAuthPayload,
     ) -> Result<TxHash, Box<dyn std::error::Error>> {
         let api = Self::get_api();
-        let tx = api.proxy_authorzie(auth_puk, sig, payload);
+        let account = AccountId32::from_str(account)?;
+        let tx = api.proxy_authorzie(account.0, sig, payload);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
         let hash = event.extrinsic_hash();

@@ -102,13 +102,17 @@ impl StorageTransaction {
         Self::find_first::<OssDestroy>(event)
     }
 
-    pub async fn proxy_authorize(&self, auth_puk: AuthPuk, sig: Sig, payload: ProxyAuthPayload) 
-        -> Result<TxHash, Box<dyn std::error::Error>> {
-            let api = Self::get_api();
-            let tx = api.proxy_authorzie(auth_puk, sig, payload);
-            let from = self.get_pair_signer();
-            let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-            let hash = event.extrinsic_hash();
-            Ok(format!("0x{}", hex::encode(hash.0)))
+    pub async fn proxy_authorize(
+        &self,
+        auth_puk: AuthPuk,
+        sig: Sig,
+        payload: ProxyAuthPayload,
+    ) -> Result<TxHash, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let tx = api.proxy_authorzie(auth_puk, sig, payload);
+        let from = self.get_pair_signer();
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let hash = event.extrinsic_hash();
+        Ok(format!("0x{}", hex::encode(hash.0)))
     }
 }

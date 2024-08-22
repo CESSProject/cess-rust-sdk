@@ -154,4 +154,13 @@ pub trait Call {
             Err(e) => Err(format!("{}", e).into()),
         }
     }
+
+    async fn get_latest_block() -> Result<u64, Error> {
+        let api = init_api()
+            .await
+            .map_err(|_| Error::Custom("All connections failed.".into()))?;
+
+        let block = api.blocks().at_latest().await?;
+        Ok(block.number().into())
+    }
 }

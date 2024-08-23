@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::chain::Query;
+use crate::chain::{Chain, Query};
 use crate::core::ApiProvider;
 use crate::polkadot::{
     self,
@@ -14,6 +14,8 @@ use subxt::utils::AccountId32;
 impl_api_provider!(StorageApiProvider, StorageApi, polkadot::storage().oss());
 
 pub struct StorageQuery;
+
+impl Chain for StorageQuery{}
 
 impl Query for StorageQuery {
     type Api = StorageApi;

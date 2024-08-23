@@ -2,6 +2,7 @@ pub mod audit;
 pub mod file_bank;
 pub mod oss;
 pub mod storage_handler;
+pub mod balances;
 
 use crate::core::Error;
 use crate::{init_api, StorageAddress, Yes, H256};
@@ -17,7 +18,19 @@ use subxt::{
 };
 
 #[async_trait]
-pub trait Query {
+pub trait Chain {
+    async fn get_latest_block() -> Result<u64, Error> {
+        let api = init_api()
+            .await
+            .map_err(|_| Error::Custom("All connections failed.".into()))?;
+
+        let block = api.blocks().at_latest().await?;
+        Ok(block.number().into())
+    }
+}
+
+#[async_trait]
+pub trait Query : Chain {
     type Api;
 
     fn get_api() -> Self::Api;
@@ -102,18 +115,11 @@ pub trait Query {
         }
     }
 
-    async fn get_latest_block() -> Result<u64, Error> {
-        let api = init_api()
-            .await
-            .map_err(|_| Error::Custom("All connections failed.".into()))?;
-
-        let block = api.blocks().at_latest().await?;
-        Ok(block.number().into())
-    }
+    
 }
 
 #[async_trait]
-pub trait Call {
+pub trait Call : Chain{
     type Api;
 
     fn get_api() -> Self::Api;
@@ -153,14 +159,5 @@ pub trait Call {
             },
             Err(e) => Err(format!("{}", e).into()),
         }
-    }
-
-    async fn get_latest_block() -> Result<u64, Error> {
-        let api = init_api()
-            .await
-            .map_err(|_| Error::Custom("All connections failed.".into()))?;
-
-        let block = api.blocks().at_latest().await?;
-        Ok(block.number().into())
     }
 }

@@ -1,4 +1,4 @@
-use crate::chain::Query;
+use crate::chain::{Chain, Query};
 use crate::core::ApiProvider;
 use crate::polkadot::{
     self, audit::storage::StorageApi, runtime_types::pallet_audit::types::ChallengeInfo,
@@ -11,6 +11,8 @@ use subxt::utils::AccountId32;
 impl_api_provider!(StorageApiProvider, StorageApi, polkadot::storage().audit());
 
 pub struct StorageQuery;
+
+impl Chain for StorageQuery{}
 
 impl Query for StorageQuery {
     type Api = StorageApi;

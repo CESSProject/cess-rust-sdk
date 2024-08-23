@@ -1,4 +1,4 @@
-use crate::chain::Query;
+use crate::chain::{Chain, Query};
 use crate::core::ApiProvider;
 use crate::polkadot::{
     self,
@@ -19,6 +19,8 @@ impl_api_provider!(
 );
 
 pub struct StorageQuery;
+
+impl Chain for StorageQuery{}
 
 impl Query for StorageQuery {
     type Api = StorageApi;

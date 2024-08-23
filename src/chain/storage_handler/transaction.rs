@@ -1,4 +1,4 @@
-use crate::chain::Call;
+use crate::chain::{Call, Chain};
 use crate::core::ApiProvider;
 use crate::impl_api_provider;
 use crate::polkadot::{
@@ -29,6 +29,8 @@ pub type TxHash = String;
 pub struct StorageTransaction {
     pair: PairS,
 }
+
+impl Chain for StorageTransaction{}
 
 impl Call for StorageTransaction {
     type Api = TransactionApi;

@@ -20,7 +20,7 @@ impl_api_provider!(
 
 pub struct StorageQuery;
 
-impl Chain for StorageQuery{}
+impl Chain for StorageQuery {}
 
 impl Query for StorageQuery {
     type Api = StorageApi;

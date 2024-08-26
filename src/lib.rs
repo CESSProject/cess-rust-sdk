@@ -4,8 +4,6 @@ pub mod chain;
 pub mod constants;
 pub mod core;
 pub mod utils;
-pub use subxt;
-
 use core::Error;
 use dotenv::dotenv;
 use futures::future;
@@ -13,6 +11,9 @@ use log::info;
 use once_cell::sync::Lazy;
 use std::env;
 use std::sync::Arc;
+use std::time::Duration;
+pub use subxt;
+use subxt::backend::rpc::reconnecting_rpc_client::{Client, ExponentialBackoff};
 use subxt::utils::Yes;
 use subxt::{
     config::substrate::H256, storage::Address as StorageAddress, OnlineClient, PolkadotConfig,
@@ -26,11 +27,39 @@ static CHAIN_API: Lazy<Arc<Mutex<Option<OnlineClient<PolkadotConfig>>>>> =
 #[subxt::subxt(runtime_metadata_path = "metadata/metadata.scale")]
 pub mod polkadot {}
 
+async fn prepare_rpc_client(url: &str) -> Result<Client, Error> {
+    let client = Client::builder()
+        .retry_policy(
+            ExponentialBackoff::from_millis(100)
+                .max_delay(Duration::from_secs(10))
+                .take(3),
+        )
+        .build(url.to_string())
+        .await
+        .map_err(|e| Error::Custom(e.to_string()))?;
+
+    Ok(client)
+}
+
 async fn try_connect(url: Option<&str>) -> Result<OnlineClient<PolkadotConfig>, Error> {
-    let api = match url {
-        Some(url) => OnlineClient::<PolkadotConfig>::from_url(url).await?,
-        None => OnlineClient::<PolkadotConfig>::new().await?,
+    let rpc = match url {
+        Some(url) => prepare_rpc_client(url).await?,
+        None => prepare_rpc_client("ws://127.0.0.1:9944").await?,
     };
+    let api = OnlineClient::<PolkadotConfig>::from_rpc_client(rpc.clone()).await?;
+
+    let rpc2 = rpc.clone();
+    tokio::spawn(async move {
+        loop {
+            let reconnected = rpc2.reconnect_initiated().await;
+            let now = std::time::Instant::now();
+            reconnected.await;
+            info!(target: "SDK",
+                "RPC client reconnection took `{}s`",
+                now.elapsed().as_secs()
+            );
+        }
+    });
 
     Ok(api)
 }

@@ -1,8 +1,8 @@
 pub mod audit;
+pub mod balances;
 pub mod file_bank;
 pub mod oss;
 pub mod storage_handler;
-pub mod balances;
 
 use crate::core::Error;
 use crate::{init_api, StorageAddress, Yes, H256};
@@ -30,7 +30,7 @@ pub trait Chain {
 }
 
 #[async_trait]
-pub trait Query : Chain {
+pub trait Query: Chain {
     type Api;
 
     fn get_api() -> Self::Api;
@@ -114,12 +114,10 @@ pub trait Query : Chain {
             }
         }
     }
-
-    
 }
 
 #[async_trait]
-pub trait Call : Chain{
+pub trait Call: Chain {
     type Api;
 
     fn get_api() -> Self::Api;

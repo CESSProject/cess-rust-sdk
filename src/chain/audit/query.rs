@@ -12,7 +12,7 @@ impl_api_provider!(StorageApiProvider, StorageApi, polkadot::storage().audit());
 
 pub struct StorageQuery;
 
-impl Chain for StorageQuery{}
+impl Chain for StorageQuery {}
 
 impl Query for StorageQuery {
     type Api = StorageApi;

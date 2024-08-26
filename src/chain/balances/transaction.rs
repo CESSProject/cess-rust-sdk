@@ -2,10 +2,7 @@ use crate::chain::{Call, Chain};
 use crate::core::ApiProvider;
 use crate::impl_api_provider;
 use crate::polkadot::balances::events::Transfer;
-use crate::polkadot::{
-    self,
-    balances::calls::TransactionApi,
-};
+use crate::polkadot::{self, balances::calls::TransactionApi};
 // use crate::utils::hash_from_string;
 use std::str::FromStr;
 use subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
@@ -25,7 +22,7 @@ pub struct StorageTransaction {
     pair: PairS,
 }
 
-impl Chain for StorageTransaction{}
+impl Chain for StorageTransaction {}
 
 impl Call for StorageTransaction {
     type Api = TransactionApi;
@@ -45,7 +42,11 @@ impl StorageTransaction {
         Self { pair }
     }
 
-    pub async fn transfer(&self, account: &str, amount: u128) -> Result<(TxHash, Transfer), Box<dyn std::error::Error>>{
+    pub async fn transfer(
+        &self,
+        account: &str,
+        amount: u128,
+    ) -> Result<(TxHash, Transfer), Box<dyn std::error::Error>> {
         let api = Self::get_api();
         let account = AccountId32::from_str(account)?;
         let tx = api.transfer_allow_death(subxt::utils::MultiAddress::Id(account), amount);

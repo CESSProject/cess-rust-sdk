@@ -34,7 +34,7 @@ pub struct StorageTransaction {
     pair: PairS,
 }
 
-impl Chain for StorageTransaction{}
+impl Chain for StorageTransaction {}
 
 impl Call for StorageTransaction {
     type Api = TransactionApi;

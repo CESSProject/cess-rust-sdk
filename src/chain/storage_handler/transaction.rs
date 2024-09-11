@@ -1,6 +1,8 @@
 use crate::chain::{Call, Chain};
 use crate::core::ApiProvider;
 use crate::impl_api_provider;
+use crate::polkadot::storage_handler::calls::types::exec_order::OrderId;
+use crate::polkadot::storage_handler::events::PaidOrder;
 use crate::polkadot::{
     self,
     runtime_types::bounded_collections::bounded_vec::BoundedVec,
@@ -239,5 +241,17 @@ impl StorageTransaction {
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
 
         Self::find_first::<CreatePayOrder>(event)
+    }
+
+    pub async fn exec_order(
+        &self,
+        order_id: OrderId,
+    ) -> Result<(TxHash, PaidOrder), Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let tx = api.exec_order(order_id);
+        let from = self.get_pair_signer();
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        Self::find_first::<PaidOrder>(event)
     }
 }

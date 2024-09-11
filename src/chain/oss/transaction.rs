@@ -118,4 +118,19 @@ impl StorageTransaction {
         let hash = event.extrinsic_hash();
         Ok(format!("0x{}", hex::encode(hash.0)))
     }
+
+    pub async fn evm_proxy_authorzie(
+        &self,
+        account: &str,
+        sig: [u8; 65],
+        payload: ProxyAuthPayload,
+    ) -> Result<TxHash, Box<dyn std::error::Error>> {
+        let api = Self::get_api();
+        let account = AccountId32::from_str(account)?;
+        let tx = api.evm_proxy_authorzie(account.0, sig, payload);
+        let from = self.get_pair_signer();
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let hash = event.extrinsic_hash();
+        Ok(format!("0x{}", hex::encode(hash.0)))
+    }
 }

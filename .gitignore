@@ -4,3 +4,5 @@ expand.rs
 .vscode
 
 .env
+
+examples/target

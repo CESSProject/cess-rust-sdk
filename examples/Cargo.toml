@@ -1,0 +1,10 @@
+[package]
+name = "examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cess-rust-sdk ={ path = "../"}
+dotenv = "0.15.0"
+tokio = { version = "1.38.0", features = ["full"] }
+sp-keyring = "34.0.0"

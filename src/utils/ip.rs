@@ -44,7 +44,7 @@ pub fn parse_multiaddrs(domain: &str) -> Result<Vec<String>, Box<dyn std::error:
     }
 
     for v in result.iter() {
-        let dnses = match resolver.txt_lookup(&format!("_dnsaddr.{}", v)) {
+        let dnses = match resolver.txt_lookup(format!("_dnsaddr.{}", v)) {
             Ok(dnses) => dnses,
             Err(_) => continue,
         };

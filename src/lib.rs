@@ -3,7 +3,9 @@
 pub mod chain;
 pub mod constants;
 pub mod core;
+pub mod gateway;
 pub mod utils;
+
 use core::Error;
 use dotenv::dotenv;
 use futures::future;
@@ -65,8 +67,6 @@ async fn try_connect(url: Option<&str>) -> Result<OnlineClient<PolkadotConfig>, 
 }
 
 async fn try_default_connect() -> Result<OnlineClient<PolkadotConfig>, Error> {
-    dotenv().ok();
-
     let mut urls = [
         "wss://testnet-rpc.cess.cloud:443/ws/",
         "wss://testnet-rpc0.cess.cloud:443/ws/",

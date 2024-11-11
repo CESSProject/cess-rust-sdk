@@ -12,11 +12,11 @@ If you find any system errors or have suggestions for improvements, please submi
 ## 📢 Announcement
 **CESS test network rpc endpoints**
 ```
-wss://testnet-rpc.cess.cloud/ws/
+wss://testnet-rpc.cess.network
 ```
 **CESS test network bootstrap node**
 ```
-_dnsaddr.boot-kldr-testnet.cess.cloud
+_dnsaddr.boot-miner-testnet.cess.network
 ```
 
 ## 🚰 CESS test network faucet

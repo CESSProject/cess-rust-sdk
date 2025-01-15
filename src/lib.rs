@@ -15,7 +15,7 @@ use std::env;
 use std::sync::Arc;
 use std::time::Duration;
 pub use subxt;
-use subxt::backend::rpc::reconnecting_rpc_client::{Client, ExponentialBackoff};
+use subxt::backend::rpc::reconnecting_rpc_client::{ExponentialBackoff, RpcClient};
 use subxt::utils::Yes;
 use subxt::{
     config::substrate::H256, storage::Address as StorageAddress, OnlineClient, PolkadotConfig,
@@ -29,8 +29,8 @@ static CHAIN_API: Lazy<Arc<Mutex<Option<OnlineClient<PolkadotConfig>>>>> =
 #[subxt::subxt(runtime_metadata_path = "metadata/metadata.scale")]
 pub mod polkadot {}
 
-async fn prepare_rpc_client(url: &str) -> Result<Client, Error> {
-    let client = Client::builder()
+async fn prepare_rpc_client(url: &str) -> Result<RpcClient, Error> {
+    let client = RpcClient::builder()
         .retry_policy(
             ExponentialBackoff::from_millis(100)
                 .max_delay(Duration::from_secs(10))
@@ -50,18 +50,18 @@ async fn try_connect(url: Option<&str>) -> Result<OnlineClient<PolkadotConfig>, 
     };
     let api = OnlineClient::<PolkadotConfig>::from_rpc_client(rpc.clone()).await?;
 
-    let rpc2 = rpc.clone();
-    tokio::spawn(async move {
-        loop {
-            let reconnected = rpc2.reconnect_initiated().await;
-            let now = std::time::Instant::now();
-            reconnected.await;
-            info!(target: "SDK",
-                "RPC client reconnection took `{}s`",
-                now.elapsed().as_secs()
-            );
-        }
-    });
+    // let rpc2 = rpc.clone();
+    // tokio::spawn(async move {
+    //     loop {
+    //         let reconnected = rpc2.().await;
+    //         let now = std::time::Instant::now();
+    //         reconnected.await;
+    //         info!(target: "SDK",
+    //             "RPC client reconnection took `{}s`",
+    //             now.elapsed().as_secs()
+    //         );
+    //     }
+    // });
 
     Ok(api)
 }

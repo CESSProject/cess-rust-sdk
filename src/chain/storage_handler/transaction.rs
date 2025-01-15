@@ -1,5 +1,5 @@
 use crate::chain::{Call, Chain};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
 use crate::polkadot::storage_handler::calls::types::exec_order::OrderId;
 use crate::polkadot::storage_handler::events::PaidOrder;
@@ -57,7 +57,7 @@ impl StorageTransaction {
         gib_count: u32,
         territory_name: &str,
         days: u32,
-    ) -> Result<(TxHash, MintTerritory), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, MintTerritory), Error> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
 
@@ -76,7 +76,7 @@ impl StorageTransaction {
         &self,
         territory_name: &str,
         gib_count: u32,
-    ) -> Result<(TxHash, ExpansionTerritory), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, ExpansionTerritory), Error> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
         let tx = api.expanding_territory(BoundedVec(territory_name), gib_count);
@@ -90,7 +90,7 @@ impl StorageTransaction {
         &self,
         territory_name: &str,
         days: u32,
-    ) -> Result<(TxHash, RenewalTerritory), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, RenewalTerritory), Error> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
         let tx = api.renewal_territory(BoundedVec(territory_name), days);
@@ -104,7 +104,7 @@ impl StorageTransaction {
         &self,
         territory_name: &str,
         days: u32,
-    ) -> Result<(TxHash, ReactivateTerritory), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, ReactivateTerritory), Error> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
         let tx = api.reactivate_territory(BoundedVec(territory_name), days);
@@ -118,7 +118,7 @@ impl StorageTransaction {
         &self,
         territory_name: &str,
         price: u128,
-    ) -> Result<(TxHash, Consignment), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, Consignment), Error> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
         let tx = api.territory_consignment(BoundedVec(territory_name), price);
@@ -132,7 +132,7 @@ impl StorageTransaction {
         &self,
         token: &str,
         rename: &str,
-    ) -> Result<(TxHash, BuyConsignment), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, BuyConsignment), Error> {
         let api = Self::get_api();
         let token = H256::from_str(token).unwrap();
         let rename = rename.as_bytes().to_vec();
@@ -146,7 +146,7 @@ impl StorageTransaction {
     pub async fn cancel_consignment(
         &self,
         territory_name: &str,
-    ) -> Result<(TxHash, CancleConsignment), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, CancleConsignment), Error> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
         let tx = api.cancel_consignment(BoundedVec(territory_name));
@@ -159,7 +159,7 @@ impl StorageTransaction {
     pub async fn cancel_purchase_action(
         &self,
         token: &str,
-    ) -> Result<(TxHash, CancelPurchaseAction), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, CancelPurchaseAction), Error> {
         let api = Self::get_api();
         let token = H256::from_str(token).unwrap();
         let tx = api.cancel_purchase_action(token);
@@ -173,10 +173,10 @@ impl StorageTransaction {
         &self,
         territory_name: &str,
         receiver: &str,
-    ) -> Result<TxHash, Box<dyn std::error::Error>> {
+    ) -> Result<TxHash, Error> {
         let api = Self::get_api();
         let territory_name = territory_name.as_bytes().to_vec();
-        let receiver = AccountId32::from_str(receiver)?;
+        let receiver = AccountId32::from_str(receiver).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.territory_grants(BoundedVec(territory_name), receiver);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
@@ -188,7 +188,7 @@ impl StorageTransaction {
         &self,
         old_territory_name: &str,
         new_territory_name: &str,
-    ) -> Result<TxHash, Box<dyn std::error::Error>> {
+    ) -> Result<TxHash, Error> {
         let api = Self::get_api();
 
         let old_territory_name = if old_territory_name.starts_with("0x") {
@@ -225,9 +225,10 @@ impl StorageTransaction {
         gib_count: u32,
         days: u32,
         expired: u32,
-    ) -> Result<(TxHash, CreatePayOrder), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, CreatePayOrder), Error> {
         let api = Self::get_api();
-        let target_acc = AccountId32::from_str(target_acc)?;
+        let target_acc =
+            AccountId32::from_str(target_acc).map_err(|e| Error::Custom(e.to_string()))?;
         let territory_name = territory_name.as_bytes().to_vec();
         let tx = api.create_order(
             target_acc,
@@ -243,10 +244,7 @@ impl StorageTransaction {
         Self::find_first::<CreatePayOrder>(event)
     }
 
-    pub async fn exec_order(
-        &self,
-        order_id: OrderId,
-    ) -> Result<(TxHash, PaidOrder), Box<dyn std::error::Error>> {
+    pub async fn exec_order(&self, order_id: OrderId) -> Result<(TxHash, PaidOrder), Error> {
         let api = Self::get_api();
         let tx = api.exec_order(order_id);
         let from = self.get_pair_signer();

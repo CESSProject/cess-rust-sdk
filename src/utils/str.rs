@@ -1,3 +1,4 @@
+use crate::core::Error;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
@@ -9,7 +10,7 @@ const LETTER_ID_MAX: i32 = 63 / LETTER_ID_BITS;
 const BASE_STR: &str =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()[]{}+-*/_=.";
 
-pub fn get_random_code(length: u8) -> Result<String, Box<dyn std::error::Error>> {
+pub fn get_random_code(length: u8) -> Result<String, Error> {
     let seed = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()

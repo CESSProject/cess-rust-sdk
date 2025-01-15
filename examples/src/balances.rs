@@ -5,7 +5,7 @@ use cess_rust_sdk::{
 const MNEMONIC: &str =
     "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
 
-pub async fn transfer_token() -> Result<(String, Transfer), Box<dyn std::error::Error>> {
+pub async fn transfer_token() -> Result<(String, Transfer), Error> {
     let storage = StorageTransaction::new(MNEMONIC);
     storage
         .transfer(

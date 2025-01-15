@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.80"
+async-trait = "0.1.83"
 base58 = "0.2.0"
 blake2 = "0.10.6"
 bs58 = "0.5.1"
@@ -26,7 +26,7 @@ serde = { version = "1.0.203", features = ["derive"] }
 
 # Important! sp-keyring version should depend on same version of sp-core exported from subxt
 sp-keyring = "34.0.0"
-subxt = { git = "https://github.com/paritytech/subxt", tag="v0.37.0", features=["substrate-compat", "unstable-reconnecting-rpc-client"]}
+subxt = { git = "https://github.com/paritytech/subxt", tag="v0.38.0", features=["substrate-compat", "reconnecting-rpc-client"]}
 thiserror = "1.0.61"
 tokio = { version = "1.38.0", features = ["full"] }
 tokio-util = {version = "0.7.12", features = ["io", "io-util"] }

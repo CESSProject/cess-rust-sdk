@@ -52,6 +52,30 @@ pub enum Error {
 
     #[error(transparent)]
     Application(#[from] Box<dyn std::error::Error + Send + Sync>),
+
+    #[error(transparent)]
+    TryFromSlice(#[from] std::array::TryFromSliceError),
+
+    #[error(transparent)]
+    PublicError(#[from] subxt::ext::sp_core::crypto::PublicError),
+
+    #[error(transparent)]
+    SecretStringError(#[from] subxt::ext::sp_core::crypto::SecretStringError),
+
+    #[error(transparent)]
+    ResolveError(#[from] trust_dns_resolver::error::ResolveError),
+
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
+
+    #[error(transparent)]
+    ReqwestError(#[from] reqwest::Error),
+
+    #[error(transparent)]
+    ReqwestInvalidHeaderValue(#[from] reqwest::header::InvalidHeaderValue),
+
+    #[error(transparent)]
+    FromHexError(#[from] hex::FromHexError),
 }
 
 impl From<&str> for Error {

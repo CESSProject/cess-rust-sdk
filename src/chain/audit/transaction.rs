@@ -1,5 +1,5 @@
 use crate::chain::{Call, Chain};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
 use crate::polkadot::audit::calls::types::submit_verify_idle_result::Accumulator;
 use crate::polkadot::{
@@ -50,7 +50,7 @@ impl StorageTransaction {
     pub async fn submit_idle_proof(
         &self,
         idle_prove: BoundedVec<u8>,
-    ) -> Result<(TxHash, SubmitIdleProof), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, SubmitIdleProof), Error> {
         let api = Self::get_api();
 
         let tx = api.submit_idle_proof(idle_prove);
@@ -63,7 +63,7 @@ impl StorageTransaction {
     pub async fn submit_service_proof(
         &self,
         service_prove: BoundedVec<u8>,
-    ) -> Result<(TxHash, SubmitServiceProof), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, SubmitServiceProof), Error> {
         let api = Self::get_api();
 
         let tx = api.submit_service_proof(service_prove);
@@ -83,7 +83,7 @@ impl StorageTransaction {
         idle_result: bool,
         signature: BoundedVec<u8>,
         tee_puk: [u8; 32],
-    ) -> Result<(TxHash, SubmitIdleVerifyResult), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, SubmitIdleVerifyResult), Error> {
         let api = Self::get_api();
 
         let tx = api.submit_verify_idle_result(
@@ -107,7 +107,7 @@ impl StorageTransaction {
         signature: BoundedVec<u8>,
         service_bloom_filter: BloomFilter,
         tee_puk: [u8; 32],
-    ) -> Result<(TxHash, SubmitServiceVerifyResult), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, SubmitServiceVerifyResult), Error> {
         let api = Self::get_api();
 
         let tx = api.submit_verify_service_result(

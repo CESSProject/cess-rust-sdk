@@ -1,6 +1,10 @@
 use super::upload_response::UploadResponse;
-use crate::utils::{
-    account::get_pair_address_as_ss58_address, bucket::is_valid_bucket_name, str::get_random_code,
+use crate::{
+    core::Error,
+    utils::{
+        account::get_pair_address_as_ss58_address, bucket::is_valid_bucket_name,
+        str::get_random_code,
+    },
 };
 use base58::ToBase58;
 use reqwest::{
@@ -20,7 +24,7 @@ pub async fn upload(
     bucket: &str,
     territory: &str,
     mnemonic: &str,
-) -> Result<UploadResponse, Box<dyn std::error::Error>> {
+) -> Result<UploadResponse, Error> {
     let metadata = fs::metadata(file_path).await?;
 
     if metadata.is_dir() {
@@ -83,7 +87,7 @@ pub async fn download(
     fid: &str,
     mnemonic: &str,
     save_path: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Error> {
     let mut save_path = String::from(save_path);
     let mut gateway_url = String::from(gateway_url);
 

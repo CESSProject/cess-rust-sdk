@@ -1,12 +1,14 @@
 use blake2::{Blake2b512, Digest};
-use sp_keyring::sr25519::sr25519::Pair;
 use subxt::{
     ext::sp_core::{
         crypto::{AccountId32, Ss58AddressFormat, Ss58AddressFormatRegistry, Ss58Codec},
+        sr25519::Pair,
         ByteArray, Pair as sp_core_pair,
     },
     utils::AccountId32 as SubxtUtilsAccountId32,
 };
+
+use crate::core::Error;
 
 const SS_PREFIX: [u8; 7] = [0x53, 0x53, 0x35, 0x38, 0x50, 0x52, 0x45];
 const SUBSTRATE_PREFIX: [u8; 1] = [0x2a];
@@ -19,7 +21,7 @@ fn append_bytes(data1: &[u8], data2: &[u8]) -> Vec<u8> {
     result
 }
 
-pub fn verify_address(address: &str, prefix: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn verify_address(address: &str, prefix: &[u8]) -> Result<(), Error> {
     let decode_bytes = bs58::decode(address)
         .into_vec()
         .map_err(|_| "Public key decoding failed")?;
@@ -52,7 +54,7 @@ pub fn verify_address(address: &str, prefix: &[u8]) -> Result<(), Box<dyn std::e
     Ok(())
 }
 
-pub fn parsing_public_key(address: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+pub fn parsing_public_key(address: &str) -> Result<Vec<u8>, Error> {
     match verify_address(address, &CESS_PREFIX) {
         Err(_) => {
             if verify_address(address, &SUBSTRATE_PREFIX).is_err() {
@@ -79,22 +81,15 @@ pub fn parsing_public_key(address: &str) -> Result<Vec<u8>, Box<dyn std::error::
     }
 }
 
-pub fn encode_public_key_as_substrate_account(
-    public_key: &[u8],
-) -> Result<String, Box<dyn std::error::Error>> {
+pub fn encode_public_key_as_substrate_account(public_key: &[u8]) -> Result<String, Error> {
     encode_public_key_as_account(public_key, &SUBSTRATE_PREFIX)
 }
 
-pub fn encode_public_key_as_cess_account(
-    public_key: &[u8],
-) -> Result<String, Box<dyn std::error::Error>> {
+pub fn encode_public_key_as_cess_account(public_key: &[u8]) -> Result<String, Error> {
     encode_public_key_as_account(public_key, &CESS_PREFIX)
 }
 
-fn encode_public_key_as_account(
-    public_key: &[u8],
-    prefix: &[u8],
-) -> Result<String, Box<dyn std::error::Error>> {
+fn encode_public_key_as_account(public_key: &[u8], prefix: &[u8]) -> Result<String, Error> {
     if public_key.len() != 32 {
         return Err("Invalid public key".into());
     }
@@ -111,7 +106,7 @@ fn encode_public_key_as_account(
     Ok(address)
 }
 
-pub fn get_ss58_address(account_str: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn get_ss58_address(account_str: &str) -> Result<String, Error> {
     let ss58_address = AccountId32::from_string(account_str)?;
     let address_type = Ss58AddressFormatRegistry::CessTestnetAccount as u16;
     let ss58_cess_address =
@@ -122,7 +117,7 @@ pub fn get_ss58_address(account_str: &str) -> Result<String, Box<dyn std::error:
 
 pub fn get_ss58_address_from_subxt_accountid32(
     account: SubxtUtilsAccountId32,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<String, Error> {
     let ss58_address = match AccountId32::from_slice(&account.0) {
         Ok(ss58_address) => ss58_address,
         Err(_) => return Err("Error: Unable to parse AccountId32".into()),
@@ -134,7 +129,7 @@ pub fn get_ss58_address_from_subxt_accountid32(
     Ok(ss58_cess_address)
 }
 
-pub fn get_pair_address_as_ss58_address(pair: Pair) -> Result<String, Box<dyn std::error::Error>> {
+pub fn get_pair_address_as_ss58_address(pair: Pair) -> Result<String, Error> {
     let address_type = Ss58AddressFormatRegistry::CessTestnetAccount as u16;
     let ss58_cess_address = pair
         .public()

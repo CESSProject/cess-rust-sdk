@@ -1,5 +1,5 @@
 use crate::chain::{Chain, Query};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::polkadot::{
     self,
     runtime_types::bounded_collections::bounded_vec::BoundedVec,
@@ -34,7 +34,7 @@ impl StorageQuery {
     pub async fn territory_key(
         token: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<(String, String)>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<(String, String)>, Error> {
         let api = Self::get_api();
         let token = H256::from_str(token).unwrap();
         let query = api.territory_key(token);
@@ -53,9 +53,9 @@ impl StorageQuery {
         account: &str,
         territory_name: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<TerritoryInfo>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<TerritoryInfo>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let territory_name = territory_name.as_bytes().to_vec();
         let query = api.territory(account, BoundedVec(territory_name));
 
@@ -65,9 +65,9 @@ impl StorageQuery {
     pub async fn territories_by_account(
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<Vec<TerritoryInfo>>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Vec<TerritoryInfo>>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.territory_iter1(account);
 
         let mut stream = Self::execute_iter(query, block_hash).await?;
@@ -87,7 +87,7 @@ impl StorageQuery {
     pub async fn consignment(
         token: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<ConsignmentInfo>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<ConsignmentInfo>, Error> {
         let api = Self::get_api();
         let token = H256::from_str(token).unwrap();
         let query = api.consignment(token);
@@ -99,7 +99,7 @@ impl StorageQuery {
         block_number: u32,
         token: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<bool>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<bool>, Error> {
         let api = Self::get_api();
         let token = H256::from_str(token).unwrap();
         let query = api.territory_frozen(block_number, token);
@@ -110,7 +110,7 @@ impl StorageQuery {
     pub async fn territory_frozen_counter(
         block_number: u32,
         block_hash: Option<H256>,
-    ) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<u32>, Error> {
         let api = Self::get_api();
         let query = api.territory_frozen_counter(block_number);
 
@@ -121,7 +121,7 @@ impl StorageQuery {
         block_number: u32,
         token: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<bool>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<bool>, Error> {
         let api = Self::get_api();
         let token = H256::from_str(token).unwrap();
         let query = api.territory_expired(block_number, token);
@@ -129,36 +129,28 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
-    pub async fn unit_price(
-        block_hash: Option<H256>,
-    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+    pub async fn unit_price(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.unit_price();
 
         Self::execute_query(&query, block_hash).await
     }
 
-    pub async fn total_power(
-        block_hash: Option<H256>,
-    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+    pub async fn total_power(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.total_idle_space();
 
         Self::execute_query(&query, block_hash).await
     }
 
-    pub async fn total_space(
-        block_hash: Option<H256>,
-    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+    pub async fn total_space(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.total_service_space();
 
         Self::execute_query(&query, block_hash).await
     }
 
-    pub async fn purchased_space(
-        block_hash: Option<H256>,
-    ) -> Result<Option<u128>, Box<dyn std::error::Error>> {
+    pub async fn purchased_space(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.purchased_space();
 
@@ -168,7 +160,7 @@ impl StorageQuery {
     pub async fn pay_order(
         order_hash: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<OrderInfo>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<OrderInfo>, Error> {
         let api = Self::get_api();
         let order_hash = order_hash.as_bytes().to_vec();
         let query = api.pay_order(BoundedVec(order_hash));

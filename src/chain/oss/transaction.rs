@@ -1,5 +1,5 @@
 use crate::chain::{Call, Chain};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
 use crate::polkadot::oss::calls::types::proxy_authorzie::Sig;
 use crate::polkadot::runtime_types::pallet_oss::types::ProxyAuthPayload;
@@ -43,12 +43,9 @@ impl StorageTransaction {
         Self { pair }
     }
 
-    pub async fn authorize(
-        &self,
-        account: &str,
-    ) -> Result<(TxHash, Authorize), Box<dyn std::error::Error>> {
+    pub async fn authorize(&self, account: &str) -> Result<(TxHash, Authorize), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.authorize(account);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
@@ -59,9 +56,9 @@ impl StorageTransaction {
     pub async fn cancel_authorize(
         &self,
         account: &str,
-    ) -> Result<(TxHash, CancelAuthorize), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, CancelAuthorize), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.cancel_authorize(account);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
@@ -73,7 +70,7 @@ impl StorageTransaction {
         &self,
         endpoint: [u8; 38],
         domain: BoundedVec<u8>,
-    ) -> Result<(TxHash, OssRegister), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, OssRegister), Error> {
         let api = Self::get_api();
         let tx = api.register(endpoint, domain);
         let from = self.get_pair_signer();
@@ -86,7 +83,7 @@ impl StorageTransaction {
         &self,
         endpoint: [u8; 38],
         domain: BoundedVec<u8>,
-    ) -> Result<(TxHash, OssUpdate), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, OssUpdate), Error> {
         let api = Self::get_api();
         let tx = api.update(endpoint, domain);
         let from = self.get_pair_signer();
@@ -95,7 +92,7 @@ impl StorageTransaction {
         Self::find_first::<OssUpdate>(event)
     }
 
-    pub async fn destroy(&self) -> Result<(TxHash, OssDestroy), Box<dyn std::error::Error>> {
+    pub async fn destroy(&self) -> Result<(TxHash, OssDestroy), Error> {
         let api = Self::get_api();
         let tx = api.destroy();
         let from = self.get_pair_signer();
@@ -109,9 +106,9 @@ impl StorageTransaction {
         account: &str,
         sig: Sig,
         payload: ProxyAuthPayload,
-    ) -> Result<TxHash, Box<dyn std::error::Error>> {
+    ) -> Result<TxHash, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.proxy_authorzie(account.0, sig, payload);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
@@ -124,9 +121,9 @@ impl StorageTransaction {
         account: &str,
         sig: [u8; 65],
         payload: ProxyAuthPayload,
-    ) -> Result<TxHash, Box<dyn std::error::Error>> {
+    ) -> Result<TxHash, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.evm_proxy_authorzie(account.0, sig, payload);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;

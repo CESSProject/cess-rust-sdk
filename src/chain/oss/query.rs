@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::chain::{Chain, Query};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::polkadot::{
     self,
     oss::storage::StorageApi,
@@ -30,9 +30,9 @@ impl StorageQuery {
         &self,
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<BoundedVec<AccountId32>>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<BoundedVec<AccountId32>>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.authority_list(account);
 
         Self::execute_query(&query, block_hash).await
@@ -42,9 +42,9 @@ impl StorageQuery {
         &self,
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<OssInfo>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<OssInfo>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.oss(account);
 
         Self::execute_query(&query, block_hash).await

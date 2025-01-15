@@ -1,3 +1,4 @@
+use crate::core::Error;
 use libp2p::core::multiaddr::{Multiaddr, Protocol};
 use std::{net::IpAddr, str::FromStr};
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
@@ -11,7 +12,7 @@ pub fn is_valid_ip(ip_addr: &str) -> bool {
 }
 
 // parse_multiaddrs
-pub fn parse_multiaddrs(domain: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+pub fn parse_multiaddrs(domain: &str) -> Result<Vec<String>, Error> {
     let mut result = Vec::new();
     let mut real_dns = Vec::new();
     match Multiaddr::from_str(domain) {
@@ -67,7 +68,7 @@ pub fn parse_multiaddrs(domain: &str) -> Result<Vec<String>, Box<dyn std::error:
 }
 
 /// Parses a `<character-string>` of a `dnsaddr` TXT record.
-pub fn parse_dnsaddr_txt(txt: &[u8]) -> Result<Multiaddr, Box<dyn std::error::Error>> {
+pub fn parse_dnsaddr_txt(txt: &[u8]) -> Result<Multiaddr, Error> {
     let s = std::str::from_utf8(txt).map_err(|_| "Error")?;
     match s.strip_prefix("dnsaddr=") {
         None => Err("Missing `dnsaddr=` prefix.".into()),

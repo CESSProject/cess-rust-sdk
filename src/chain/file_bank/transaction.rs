@@ -1,5 +1,5 @@
 use crate::chain::{Call, Chain};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
 use crate::polkadot::{
     self,
@@ -60,7 +60,7 @@ impl StorageTransaction {
         segment_list: BoundedVec<SegmentList>,
         user_brief: UserBrief,
         file_size: u128,
-    ) -> Result<(TxHash, UploadDeclaration), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, UploadDeclaration), Error> {
         let api = Self::get_api();
         let file_hash = hash_from_string(file_hash)?;
         let tx = api.upload_declaration(file_hash, segment_list, user_brief, file_size);
@@ -75,9 +75,9 @@ impl StorageTransaction {
         account: &str,
         file_hash: &str,
         target_territory: &str,
-    ) -> Result<(TxHash, TerritoryFileDelivery), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, TerritoryFileDelivery), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let file_hash = hash_from_string(file_hash)?;
         let target_territory = target_territory.as_bytes().to_vec();
         let tx = api.territory_file_delivery(account, file_hash, BoundedVec(target_territory));
@@ -91,7 +91,7 @@ impl StorageTransaction {
         &self,
         index: u8,
         deal_hash: &str,
-    ) -> Result<(TxHash, TransferReport), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, TransferReport), Error> {
         let api = Self::get_api();
         let deal_hash = hash_from_string(deal_hash)?;
         let tx = api.transfer_report(index, deal_hash);
@@ -107,10 +107,10 @@ impl StorageTransaction {
         account: &str,
         digest: BoundedVec<DigestInfo>,
         file_hash: &str,
-    ) -> Result<(TxHash, CalculateReport), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, CalculateReport), Error> {
         let api = Self::get_api();
         let tee_sig = tee_sig.as_bytes().to_vec();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let file_hash = hash_from_string(file_hash)?;
         let tag_sig_info = TagSigInfo {
             miner: account,
@@ -130,7 +130,7 @@ impl StorageTransaction {
         tee_sig_need_verify: TeeSigNeedVerify,
         tee_sig: TeeSig,
         tee_puk: TeePuk,
-    ) -> Result<(TxHash, ReplaceIdleSpace), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, ReplaceIdleSpace), Error> {
         let api = Self::get_api();
         let tx = api.replace_idle_space(idle_sig_info, tee_sig_need_verify, tee_sig, tee_puk);
         let from = self.get_pair_signer();
@@ -143,9 +143,9 @@ impl StorageTransaction {
         &self,
         account: &str,
         file_hash: &str,
-    ) -> Result<(TxHash, DeleteFile), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, DeleteFile), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let file_hash = hash_from_string(file_hash)?;
         let tx = api.delete_file(account, file_hash);
         let from = self.get_pair_signer();
@@ -160,7 +160,7 @@ impl StorageTransaction {
         tee_sig_need_verify: TeeSigNeedVerify,
         tee_sig: TeeSig,
         tee_puk: TeePuk,
-    ) -> Result<(TxHash, IdleSpaceCert), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, IdleSpaceCert), Error> {
         let api = Self::get_api();
         let tx = api.cert_idle_space(idle_sig_info, tee_sig_need_verify, tee_sig, tee_puk);
         let from = self.get_pair_signer();
@@ -173,9 +173,9 @@ impl StorageTransaction {
         &self,
         account: &str,
         bucket_name: &str,
-    ) -> Result<(TxHash, CreateBucket), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, CreateBucket), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let bucket_name = bucket_name.as_bytes().to_vec();
         let tx = api.create_bucket(account, BoundedVec(bucket_name));
         let from = self.get_pair_signer();
@@ -188,9 +188,9 @@ impl StorageTransaction {
         &self,
         account: &str,
         bucket_name: &str,
-    ) -> Result<(TxHash, DeleteBucket), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, DeleteBucket), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let bucket_name = bucket_name.as_bytes().to_vec();
         let tx = api.delete_bucket(account, BoundedVec(bucket_name));
         let from = self.get_pair_signer();
@@ -203,7 +203,7 @@ impl StorageTransaction {
         &self,
         file_hash: &str,
         restoral_fragment: &str,
-    ) -> Result<(TxHash, GenerateRestoralOrder), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, GenerateRestoralOrder), Error> {
         let api = Self::get_api();
         let file_hash = hash_from_string(file_hash)?;
         let restoral_fragment = hash_from_string(restoral_fragment)?;
@@ -217,7 +217,7 @@ impl StorageTransaction {
     pub async fn claim_restoral_order(
         &self,
         restoral_fragment: &str,
-    ) -> Result<(TxHash, ClaimRestoralOrder), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, ClaimRestoralOrder), Error> {
         let api = Self::get_api();
         let restoral_fragment = hash_from_string(restoral_fragment)?;
         let tx = api.claim_restoral_order(restoral_fragment);
@@ -232,9 +232,9 @@ impl StorageTransaction {
         account: &str,
         file_hash: &str,
         restoral_fragment: &str,
-    ) -> Result<(TxHash, ClaimRestoralOrder), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, ClaimRestoralOrder), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let file_hash = hash_from_string(file_hash)?;
         let restoral_fragment = hash_from_string(restoral_fragment)?;
         let tx = api.claim_restoral_noexist_order(account, file_hash, restoral_fragment);
@@ -247,7 +247,7 @@ impl StorageTransaction {
     pub async fn restoral_order_complete(
         &self,
         fragment_hash: &str,
-    ) -> Result<(TxHash, RecoveryCompleted), Box<dyn std::error::Error>> {
+    ) -> Result<(TxHash, RecoveryCompleted), Error> {
         let api = Self::get_api();
         let fragment_hash = hash_from_string(fragment_hash)?;
         let tx = api.restoral_order_complete(fragment_hash);

@@ -1,5 +1,5 @@
 use crate::chain::{Chain, Query};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::polkadot::{
     self, audit::storage::StorageApi, runtime_types::pallet_audit::types::ChallengeInfo,
 };
@@ -26,9 +26,9 @@ impl StorageQuery {
     pub async fn counted_service_failed(
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<u32>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.counted_service_failed(account);
 
         Self::execute_query(&query, block_hash).await
@@ -37,9 +37,9 @@ impl StorageQuery {
     pub async fn counted_clear(
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<u8>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<u8>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.counted_clear(account);
 
         Self::execute_query(&query, block_hash).await
@@ -48,9 +48,9 @@ impl StorageQuery {
     pub async fn challenge_snapshot(
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<ChallengeInfo>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<ChallengeInfo>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.challenge_snap_shot(account);
 
         Self::execute_query(&query, block_hash).await
@@ -60,9 +60,9 @@ impl StorageQuery {
         block_number: u32,
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<bool>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<bool>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.challenge_slip(block_number, account);
 
         Self::execute_query(&query, block_hash).await
@@ -72,9 +72,9 @@ impl StorageQuery {
         block_number: u32,
         account: &str,
         block_hash: Option<H256>,
-    ) -> Result<Option<bool>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<bool>, Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.verify_slip(block_number, account);
 
         Self::execute_query(&query, block_hash).await

@@ -1,9 +1,10 @@
+use crate::core::Error;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 use uuid::Uuid;
 
-pub fn write_buf_to_file(buf: &[u8], file: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn write_buf_to_file(buf: &[u8], file: &str) -> Result<(), Error> {
     let base_dir = match Path::new(file).parent() {
         Some(path) => path,
         None => return Err("Invalid file path".into()),

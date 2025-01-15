@@ -1,5 +1,5 @@
 use crate::chain::{Call, Chain};
-use crate::core::ApiProvider;
+use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
 use crate::polkadot::balances::events::Transfer;
 use crate::polkadot::{self, balances::calls::TransactionApi};
@@ -42,13 +42,9 @@ impl StorageTransaction {
         Self { pair }
     }
 
-    pub async fn transfer(
-        &self,
-        account: &str,
-        amount: u128,
-    ) -> Result<(TxHash, Transfer), Box<dyn std::error::Error>> {
+    pub async fn transfer(&self, account: &str, amount: u128) -> Result<(TxHash, Transfer), Error> {
         let api = Self::get_api();
-        let account = AccountId32::from_str(account)?;
+        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.transfer_allow_death(subxt::utils::MultiAddress::Id(account), amount);
         let from = self.get_pair_signer();
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;

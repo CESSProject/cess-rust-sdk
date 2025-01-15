@@ -38,7 +38,7 @@ pub trait Query: Chain {
     async fn execute_query<'address, Address>(
         query: &'address Address,
         block_hash: Option<H256>,
-    ) -> Result<Option<<Address as StorageAddress>::Target>, Box<dyn std::error::Error>>
+    ) -> Result<Option<<Address as StorageAddress>::Target>, Error>
     where
         Address: StorageAddress<IsFetchable = Yes> + Sync + 'address,
     {
@@ -77,7 +77,7 @@ pub trait Query: Chain {
     async fn execute_iter<Address>(
         query: Address,
         block_hash: Option<H256>,
-    ) -> Result<StreamOfResults<StorageKeyValuePair<Address>>, Box<dyn std::error::Error>>
+    ) -> Result<StreamOfResults<StorageKeyValuePair<Address>>, Error>
     where
         Address: StorageAddress<IsIterable = Yes> + 'static + Send,
         Address::Keys: 'static + Sized,
@@ -125,7 +125,7 @@ pub trait Call: Chain {
 
     fn find_first<E: subxt::events::StaticEvent>(
         event: ExtrinsicEvents<PolkadotConfig>,
-    ) -> Result<(String, E), Box<dyn std::error::Error>> {
+    ) -> Result<(String, E), Error> {
         let hash = event.extrinsic_hash();
         match event.find_first::<E>() {
             Ok(data) => {
@@ -142,7 +142,7 @@ pub trait Call: Chain {
     async fn sign_and_submit_tx_then_watch_default<Call, Signer, T>(
         tx: &Call,
         from: &Signer,
-    ) -> Result<ExtrinsicEvents<PolkadotConfig>, Box<dyn std::error::Error>>
+    ) -> Result<ExtrinsicEvents<PolkadotConfig>, Error>
     where
         Call: Payload + Sync,
         Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig> + Sync,

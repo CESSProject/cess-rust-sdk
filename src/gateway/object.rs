@@ -1,6 +1,10 @@
 use super::upload_response::UploadResponse;
-use crate::utils::{
-    account::get_pair_address_as_ss58_address, bucket::is_valid_bucket_name, str::get_random_code,
+use crate::{
+    core::Error,
+    utils::{
+        account::get_pair_address_as_ss58_address, bucket::is_valid_bucket_name,
+        str::get_random_code,
+    },
 };
 use base58::ToBase58;
 use futures_util::stream::StreamExt;
@@ -18,7 +22,7 @@ pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
     bucket: &str,
     territory: &str,
     mnemonic: &str,
-) -> Result<UploadResponse, Box<dyn std::error::Error>> {
+) -> Result<UploadResponse, Error> {
     if !is_valid_bucket_name(bucket) {
         return Err("Invalid bucket name.".into());
     }
@@ -65,7 +69,7 @@ pub async fn download(
     gateway_url: &str,
     fid: &str,
     mnemonic: &str,
-) -> Result<impl AsyncRead + Unpin, Box<dyn std::error::Error>> {
+) -> Result<impl AsyncRead + Unpin, Error> {
     let mut gateway_url = String::from(gateway_url);
 
     if gateway_url.is_empty() {

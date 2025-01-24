@@ -6,7 +6,7 @@ use crate::polkadot::{
     runtime_types::{
         bounded_collections::bounded_vec::BoundedVec,
         pallet_file_bank::types::{
-            BucketInfo, DealInfo, FileInfo, RestoralOrderInfo, UserFileSliceInfo,
+            DealInfo, FileInfo, RestoralOrderInfo, UserFileSliceInfo,
         },
     },
 };
@@ -58,30 +58,6 @@ impl StorageQuery {
         let api = Self::get_api();
         let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let query = api.user_hold_file_list(account);
-
-        Self::execute_query(&query, block_hash).await
-    }
-
-    pub async fn bucket(
-        account: &str,
-        bucket_name: &str,
-        block_hash: Option<H256>,
-    ) -> Result<Option<BucketInfo>, Error> {
-        let api = Self::get_api();
-        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
-        let bucket_name = bucket_name.as_bytes().to_vec();
-        let query = api.bucket(account, BoundedVec(bucket_name));
-
-        Self::execute_query(&query, block_hash).await
-    }
-
-    pub async fn user_bucket_list(
-        account: &str,
-        block_hash: Option<H256>,
-    ) -> Result<Option<BoundedVec<BoundedVec<u8>>>, Error> {
-        let api = Self::get_api();
-        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
-        let query = api.user_bucket_list(account);
 
         Self::execute_query(&query, block_hash).await
     }

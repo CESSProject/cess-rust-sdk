@@ -8,7 +8,7 @@ use crate::polkadot::{
         TransactionApi,
     },
     file_bank::events::{
-        CalculateReport, ClaimRestoralOrder, CreateBucket, DeleteBucket, DeleteFile,
+        CalculateReport, ClaimRestoralOrder, DeleteFile,
         GenerateRestoralOrder, IdleSpaceCert, RecoveryCompleted, ReplaceIdleSpace,
         TerritoryFileDelivery, TransferReport, UploadDeclaration,
     },
@@ -167,36 +167,6 @@ impl StorageTransaction {
         let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
 
         Self::find_first::<IdleSpaceCert>(event)
-    }
-
-    pub async fn create_bucket(
-        &self,
-        account: &str,
-        bucket_name: &str,
-    ) -> Result<(TxHash, CreateBucket), Error> {
-        let api = Self::get_api();
-        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
-        let bucket_name = bucket_name.as_bytes().to_vec();
-        let tx = api.create_bucket(account, BoundedVec(bucket_name));
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        Self::find_first::<CreateBucket>(event)
-    }
-
-    pub async fn delete_bucket(
-        &self,
-        account: &str,
-        bucket_name: &str,
-    ) -> Result<(TxHash, DeleteBucket), Error> {
-        let api = Self::get_api();
-        let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
-        let bucket_name = bucket_name.as_bytes().to_vec();
-        let tx = api.delete_bucket(account, BoundedVec(bucket_name));
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
-
-        Self::find_first::<DeleteBucket>(event)
     }
 
     pub async fn generate_restoral_order(

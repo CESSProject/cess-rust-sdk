@@ -1,10 +1,7 @@
 use super::upload_response::UploadResponse;
 use crate::{
     core::Error,
-    utils::{
-        account::get_pair_address_as_ss58_address, bucket::is_valid_bucket_name,
-        str::get_random_code,
-    },
+    utils::{account::get_pair_address_as_ss58_address, str::get_random_code},
 };
 use base58::ToBase58;
 use reqwest::{
@@ -21,7 +18,6 @@ use tokio::{
 pub async fn upload(
     gateway_url: &str,
     file_path: &str,
-    bucket: &str,
     territory: &str,
     mnemonic: &str,
 ) -> Result<UploadResponse, Error> {
@@ -35,10 +31,6 @@ pub async fn upload(
         return Err("File is an empty file.".into());
     }
 
-    if !is_valid_bucket_name(bucket) {
-        return Err("Invalid bucket name.".into());
-    }
-
     let pair = PairS::from_string(mnemonic, None)?;
     let acc = get_pair_address_as_ss58_address(pair.clone())?;
     let message = get_random_code(16)?;
@@ -46,7 +38,6 @@ pub async fn upload(
 
     let mut headers = HeaderMap::new();
 
-    headers.insert("Bucket", HeaderValue::from_str(bucket)?);
     headers.insert("Territory", HeaderValue::from_str(territory)?);
     headers.insert("Account", HeaderValue::from_str(&acc)?);
     headers.insert("Message", HeaderValue::from_str(&message)?);
@@ -109,7 +100,7 @@ pub async fn download(
         gateway_url = format!("{}/", gateway_url);
     }
 
-    let download_url = format!("{}download/", gateway_url);
+    let download_url = format!("{}file/download/", gateway_url);
 
     let pair = PairS::from_string(mnemonic, None)?;
     let acc = get_pair_address_as_ss58_address(pair.clone())?;

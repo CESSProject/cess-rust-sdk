@@ -1,10 +1,7 @@
 use super::upload_response::UploadResponse;
 use crate::{
     core::Error,
-    utils::{
-        account::get_pair_address_as_ss58_address, bucket::is_valid_bucket_name,
-        str::get_random_code,
-    },
+    utils::{account::get_pair_address_as_ss58_address, str::get_random_code},
 };
 use base58::ToBase58;
 use futures_util::stream::StreamExt;
@@ -19,12 +16,12 @@ use tokio_util::io::{ReaderStream, StreamReader};
 pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
     gateway_url: &str,
     reader: R,
-    bucket: &str,
+    object_name: &str,
     territory: &str,
     mnemonic: &str,
-) -> Result<UploadResponse, Error> {
-    if !is_valid_bucket_name(bucket) {
-        return Err("Invalid bucket name.".into());
+) -> Result<UploadResponse, Box<dyn std::error::Error>> {
+    if object_name.trim().is_empty() {
+        return Err("Invalid object name.".into());
     }
 
     let pair = PairS::from_string(mnemonic, None)?;
@@ -34,7 +31,7 @@ pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
 
     let mut headers = HeaderMap::new();
 
-    headers.insert("Bucket", HeaderValue::from_str(bucket)?);
+    // headers.insert("Bucket", HeaderValue::from_str(bucket)?);
     headers.insert("Territory", HeaderValue::from_str(territory)?);
     headers.insert("Account", HeaderValue::from_str(&acc)?);
     headers.insert("Message", HeaderValue::from_str(&message)?);
@@ -43,7 +40,7 @@ pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
         HeaderValue::from_str(&signed_msg.0.to_base58())?,
     );
 
-    let upload_url = format!("{}/object", gateway_url);
+    let upload_url = format!("{}/object/{}", gateway_url, object_name);
 
     let client = Client::builder().build()?;
 
@@ -80,7 +77,7 @@ pub async fn download(
         gateway_url = format!("{}/", gateway_url);
     }
 
-    let download_url = format!("{}download/", gateway_url);
+    let download_url = format!("{}file/download/", gateway_url);
 
     let pair = PairS::from_string(mnemonic, None)?;
     let acc = get_pair_address_as_ss58_address(pair.clone())?;

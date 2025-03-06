@@ -1,4 +1,4 @@
-use cess_rust_sdk::chain::storage_handler::query::StorageQuery;
+use cess_rust_sdk::{chain::storage_handler::query::StorageQuery, core::Error};
 
 pub async fn get_unit_price() -> Result<Option<u128>, Error> {
     Ok(StorageQuery::unit_price(None).await.unwrap())

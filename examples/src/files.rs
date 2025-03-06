@@ -4,7 +4,7 @@ async fn upload_file() {
     let gateway = "https://deoss-sgp.cess.network";
     let mnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
     let file = "file.txt";
-    let response = upload(gateway, file, "hello", "hello", mnemonic).await;
+    let response = upload(gateway, file, "territory", mnemonic).await;
     match response {
         Ok(s) => println!("{:?}", s),
         Err(e) => {

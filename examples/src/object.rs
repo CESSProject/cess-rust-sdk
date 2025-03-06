@@ -9,7 +9,7 @@ async fn upload_object() {
     let object = "Hello, this is an object.";
     let reader = Cursor::new(object.as_bytes());
 
-    let response = upload(gateway, reader, "hello", "hello", mnemonic).await;
+    let response = upload(gateway, reader, "object_name", "territory", mnemonic).await;
     match response {
         Ok(s) => println!("{:?}", s),
         Err(e) => {
@@ -22,7 +22,7 @@ async fn upload_object() {
 async fn download_object() {
     let gateway = "https://deoss-sgp.cess.network";
     let mnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
-    let fid = "3d3f6542645ddea8a03690886ebc7a80fd661b814f1b195035b741bc49094d3d";
+    let fid = "67d1acf19a8970ce9117d016708098189088e3c4d10799add8d1a04d383ddd56";
     let response = download(gateway, fid, mnemonic).await;
     match response {
         Ok(mut reader) => {

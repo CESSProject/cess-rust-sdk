@@ -8,9 +8,9 @@ use crate::polkadot::{
         TransactionApi,
     },
     file_bank::events::{
-        CalculateReport, ClaimRestoralOrder, DeleteFile,
-        GenerateRestoralOrder, IdleSpaceCert, RecoveryCompleted, ReplaceIdleSpace,
-        TerritoryFileDelivery, TransferReport, UploadDeclaration,
+        CalculateReport, ClaimRestoralOrder, DeleteFile, GenerateRestoralOrder, IdleSpaceCert,
+        RecoveryCompleted, ReplaceIdleSpace, TerritoryFileDelivery, TransferReport,
+        UploadDeclaration,
     },
     runtime_types::bounded_collections::bounded_vec::BoundedVec,
     runtime_types::pallet_file_bank::types::{DigestInfo, SegmentList, TagSigInfo, UserBrief},

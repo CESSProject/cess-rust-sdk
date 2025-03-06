@@ -5,9 +5,7 @@ use crate::polkadot::{
     file_bank::storage::StorageApi,
     runtime_types::{
         bounded_collections::bounded_vec::BoundedVec,
-        pallet_file_bank::types::{
-            DealInfo, FileInfo, RestoralOrderInfo, UserFileSliceInfo,
-        },
+        pallet_file_bank::types::{DealInfo, FileInfo, RestoralOrderInfo, UserFileSliceInfo},
     },
 };
 use crate::utils::hash_from_string;

@@ -1,5 +1,6 @@
 use cess_rust_sdk::{
-    chain::balances::transaction::StorageTransaction, core::Error, polkadot::balances::events::Transfer
+    chain::balances::transaction::StorageTransaction, core::Error,
+    polkadot::balances::events::Transfer,
 };
 
 const MNEMONIC: &str =

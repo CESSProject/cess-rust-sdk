@@ -1,6 +1,9 @@
+use cess_rust_sdk::subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
+use cess_rust_sdk::{
+    gateway::object::{download, upload},
+    utils::{account::get_pair_address_as_ss58_address, str::get_random_code},
+};
 use std::io::Cursor;
-
-use cess_rust_sdk::gateway::{object::download, object::upload};
 use tokio::io::AsyncReadExt;
 
 async fn upload_object() {
@@ -9,7 +12,21 @@ async fn upload_object() {
     let object = "Hello, this is an object.";
     let reader = Cursor::new(object.as_bytes());
 
-    let response = upload(gateway, reader, "object_name", "territory", mnemonic).await;
+    let pair = PairS::from_string(mnemonic, None).unwrap();
+    let acc = get_pair_address_as_ss58_address(pair.clone()).unwrap();
+    let message = get_random_code(16).unwrap();
+    let signed_msg = pair.sign(message.as_bytes());
+
+    let response = upload(
+        gateway,
+        reader,
+        "object_name",
+        "territory",
+        &acc,
+        &message,
+        signed_msg,
+    )
+    .await;
     match response {
         Ok(s) => println!("{:?}", s),
         Err(e) => {
@@ -23,7 +40,13 @@ async fn download_object() {
     let gateway = "https://deoss-sgp.cess.network";
     let mnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
     let fid = "67d1acf19a8970ce9117d016708098189088e3c4d10799add8d1a04d383ddd56";
-    let response = download(gateway, fid, mnemonic).await;
+    let pair = PairS::from_string(mnemonic, None).unwrap();
+    let acc = get_pair_address_as_ss58_address(pair.clone()).unwrap();
+    let message = get_random_code(16).unwrap();
+    let signed_msg = pair.sign(message.as_bytes());
+
+    let response = download(gateway, fid, &acc, &message, signed_msg).await;
+
     match response {
         Ok(mut reader) => {
             let mut buffer = Vec::new();

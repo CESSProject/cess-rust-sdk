@@ -1,15 +1,12 @@
 use super::upload_response::UploadResponse;
-use crate::{
-    core::Error,
-    utils::{account::get_pair_address_as_ss58_address, str::get_random_code},
-};
+use crate::core::Error;
 use base58::ToBase58;
 use futures_util::stream::StreamExt;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Body, Client, RequestBuilder,
 };
-use subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
+use subxt::ext::sp_core::sr25519::Signature;
 use tokio::io::AsyncRead;
 use tokio_util::io::{ReaderStream, StreamReader};
 
@@ -18,23 +15,20 @@ pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
     reader: R,
     object_name: &str,
     territory: &str,
-    mnemonic: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
 ) -> Result<UploadResponse, Box<dyn std::error::Error>> {
     if object_name.trim().is_empty() {
         return Err("Invalid object name.".into());
     }
 
-    let pair = PairS::from_string(mnemonic, None)?;
-    let acc = get_pair_address_as_ss58_address(pair.clone())?;
-    let message = get_random_code(16)?;
-    let signed_msg = pair.sign(message.as_bytes());
-
     let mut headers = HeaderMap::new();
 
     // headers.insert("Bucket", HeaderValue::from_str(bucket)?);
     headers.insert("Territory", HeaderValue::from_str(territory)?);
-    headers.insert("Account", HeaderValue::from_str(&acc)?);
-    headers.insert("Message", HeaderValue::from_str(&message)?);
+    headers.insert("Account", HeaderValue::from_str(acc)?);
+    headers.insert("Message", HeaderValue::from_str(message)?);
     headers.insert(
         "Signature",
         HeaderValue::from_str(&signed_msg.0.to_base58())?,
@@ -65,7 +59,9 @@ pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
 pub async fn download(
     gateway_url: &str,
     fid: &str,
-    mnemonic: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
 ) -> Result<impl AsyncRead + Unpin, Error> {
     let mut gateway_url = String::from(gateway_url);
 
@@ -79,16 +75,11 @@ pub async fn download(
 
     let download_url = format!("{}file/download/", gateway_url);
 
-    let pair = PairS::from_string(mnemonic, None)?;
-    let acc = get_pair_address_as_ss58_address(pair.clone())?;
-    let message = get_random_code(16)?;
-    let signed_msg = pair.sign(message.as_bytes());
-
     let mut headers = HeaderMap::new();
 
     headers.insert("Operation", HeaderValue::from_static("download"));
-    headers.insert("Account", HeaderValue::from_str(&acc)?);
-    headers.insert("Message", HeaderValue::from_str(&message)?);
+    headers.insert("Account", HeaderValue::from_str(acc)?);
+    headers.insert("Message", HeaderValue::from_str(message)?);
     headers.insert(
         "Signature",
         HeaderValue::from_str(&signed_msg.0.to_base58())?,

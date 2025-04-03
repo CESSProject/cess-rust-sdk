@@ -19,6 +19,52 @@ pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
     message: &str,
     signed_msg: Signature,
 ) -> Result<UploadResponse, Box<dyn std::error::Error>> {
+    upload_object(
+        gateway_url,
+        reader,
+        object_name,
+        territory,
+        acc,
+        message,
+        signed_msg,
+        None,
+    )
+    .await
+}
+
+pub async fn upload_encrypt<R: AsyncRead + Send + Sync + Unpin + 'static>(
+    gateway_url: &str,
+    reader: R,
+    object_name: &str,
+    territory: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    cipher: &str,
+) -> Result<UploadResponse, Box<dyn std::error::Error>> {
+    upload_object(
+        gateway_url,
+        reader,
+        object_name,
+        territory,
+        acc,
+        message,
+        signed_msg,
+        Some(cipher.to_string()),
+    )
+    .await
+}
+
+async fn upload_object<R: AsyncRead + Send + Sync + Unpin + 'static>(
+    gateway_url: &str,
+    reader: R,
+    object_name: &str,
+    territory: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    cipher: Option<String>,
+) -> Result<UploadResponse, Box<dyn std::error::Error>> {
     if object_name.trim().is_empty() {
         return Err("Invalid object name.".into());
     }
@@ -33,6 +79,10 @@ pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
         "Signature",
         HeaderValue::from_str(&signed_msg.0.to_base58())?,
     );
+
+    if let Some(cipher) = cipher {
+        headers.insert("Cipher", HeaderValue::from_str(&cipher)?);
+    }
 
     let upload_url = format!("{}/object/{}", gateway_url, object_name);
 
@@ -63,6 +113,36 @@ pub async fn download(
     message: &str,
     signed_msg: Signature,
 ) -> Result<impl AsyncRead + Unpin, Error> {
+    download_object(gateway_url, fid, acc, message, signed_msg, None).await
+}
+
+pub async fn download_encrypt(
+    gateway_url: &str,
+    fid: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    cipher: &str,
+) -> Result<impl AsyncRead + Unpin, Error> {
+    download_object(
+        gateway_url,
+        fid,
+        acc,
+        message,
+        signed_msg,
+        Some(cipher.to_string()),
+    )
+    .await
+}
+
+async fn download_object(
+    gateway_url: &str,
+    fid: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    cipher: Option<String>,
+) -> Result<impl AsyncRead + Unpin, Error> {
     let mut gateway_url = String::from(gateway_url);
 
     if gateway_url.is_empty() {
@@ -84,6 +164,10 @@ pub async fn download(
         "Signature",
         HeaderValue::from_str(&signed_msg.0.to_base58())?,
     );
+
+    if let Some(cipher) = cipher {
+        headers.insert("Cipher", HeaderValue::from_str(&cipher)?);
+    }
 
     let client = Client::new();
     let request_builder: RequestBuilder = client

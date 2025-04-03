@@ -20,6 +20,51 @@ pub async fn upload(
     message: &str,
     signed_msg: Signature,
 ) -> Result<UploadResponse, Error> {
+    upload_file(
+        gateway_url,
+        file_path,
+        territory,
+        acc,
+        message,
+        signed_msg,
+        None,
+    )
+    .await
+}
+
+pub async fn upload_encrypt(
+    gateway_url: &str,
+    file_path: &str,
+    territory: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    cipher: &str,
+) -> Result<UploadResponse, Error> {
+    if cipher.is_empty() {
+        return Err(Error::Custom("cipher cannot be empty!".into()));
+    }
+    upload_file(
+        gateway_url,
+        file_path,
+        territory,
+        acc,
+        message,
+        signed_msg,
+        Some(cipher.to_string()),
+    )
+    .await
+}
+
+async fn upload_file(
+    gateway_url: &str,
+    file_path: &str,
+    territory: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    cipher: Option<String>,
+) -> Result<UploadResponse, Error> {
     let metadata = fs::metadata(file_path).await?;
 
     if metadata.is_dir() {
@@ -39,6 +84,10 @@ pub async fn upload(
         "Signature",
         HeaderValue::from_str(&signed_msg.0.to_base58())?,
     );
+
+    if let Some(cipher) = cipher {
+        headers.insert("Cipher", HeaderValue::from_str(&cipher)?);
+    }
 
     let mut form = multipart::Form::new();
 
@@ -75,6 +124,39 @@ pub async fn download(
     signed_msg: Signature,
     save_path: &str,
 ) -> Result<(), Error> {
+    download_file(gateway_url, fid, acc, message, signed_msg, save_path, None).await
+}
+
+pub async fn download_encrypt(
+    gateway_url: &str,
+    fid: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    save_path: &str,
+    cipher: &str,
+) -> Result<(), Error> {
+    download_file(
+        gateway_url,
+        fid,
+        acc,
+        message,
+        signed_msg,
+        save_path,
+        Some(cipher.to_string()),
+    )
+    .await
+}
+
+async fn download_file(
+    gateway_url: &str,
+    fid: &str,
+    acc: &str,
+    message: &str,
+    signed_msg: Signature,
+    save_path: &str,
+    cipher: Option<String>,
+) -> Result<(), Error> {
     let mut save_path = String::from(save_path);
     let mut gateway_url = String::from(gateway_url);
 
@@ -107,6 +189,10 @@ pub async fn download(
         "Signature",
         HeaderValue::from_str(&signed_msg.0.to_base58())?,
     );
+
+    if let Some(cipher) = cipher {
+        headers.insert("Cipher", HeaderValue::from_str(&cipher)?);
+    }
 
     let client = Client::new();
     let request_builder: RequestBuilder = client

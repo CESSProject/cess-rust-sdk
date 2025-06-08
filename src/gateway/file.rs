@@ -1,16 +1,22 @@
 use super::upload_response::UploadResponse;
 use crate::core::Error;
 use base58::ToBase58;
+use mime_guess::from_path;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     multipart, Client, RequestBuilder,
 };
-use std::os::unix::fs::MetadataExt;
+use std::io::Write;
+use std::{fs::OpenOptions, os::unix::fs::MetadataExt, path::Path, time::Duration};
 use subxt::ext::sp_core::sr25519::Signature;
 use tokio::{
     fs::{self, File},
-    io::{AsyncReadExt, AsyncWriteExt as _},
+    io::{AsyncReadExt, AsyncSeekExt as _, AsyncWriteExt as _, BufReader},
 };
+
+const CHUNK_SIZE: usize = 200 * 1024 * 1024;
+const MAX_RETRIES: u8 = 5;
+const RESUME_FILE_SUFFIX: &str = ".upload_resume";
 
 pub async fn upload(
     gateway_url: &str,
@@ -114,6 +120,146 @@ async fn upload_file(
         return Err("DeOss service failure, please retry or contact administrator.".into());
     }
     Ok(upload_response)
+}
+
+pub async fn upload_file_in_chunks_resumable(
+    file_path: &str,
+    gateway_url: &str,
+    file_name: &str,
+    territory: &str,
+    account: &str,
+    message: &str,
+    signed_msg: Signature,
+) -> Result<UploadResponse, Error> {
+    let path = Path::new(file_path);
+    let mut file = BufReader::new(File::open(path).await?);
+    let metadata = fs::metadata(path).await?;
+    let file_size = metadata.len();
+
+    let resume_path = format!("{}{}", file_path, RESUME_FILE_SUFFIX);
+    let mut start = read_resume_point(&resume_path).unwrap_or(0);
+
+    if start > 0 {
+        println!("Resuming from byte {}...", start);
+        file.seek(tokio::io::SeekFrom::Start(start)).await?;
+    }
+
+    let client = Client::new();
+    let mut buffer = vec![0; CHUNK_SIZE];
+
+    while start < file_size {
+        let end = (start + CHUNK_SIZE as u64 - 1).min(file_size - 1);
+        if start > end {
+            break;
+        }
+
+        let chunk_len = (end - start + 1) as usize;
+        file.read_exact(&mut buffer[..chunk_len]).await?;
+
+        let mut headers = HeaderMap::new();
+        headers.insert("Territory", HeaderValue::from_str(territory)?);
+        headers.insert("Account", HeaderValue::from_str(account)?);
+        headers.insert("Message", HeaderValue::from_str(message)?);
+        headers.insert(
+            "Signature",
+            HeaderValue::from_str(&signed_msg.0.to_base58())?,
+        );
+        headers.insert(
+            "Content-Range",
+            HeaderValue::from_str(&format!("bytes {}-{}/{}", start, end, file_size))?,
+        );
+        headers.insert("Content-Length", HeaderValue::from(chunk_len as u64));
+
+        let mime_type = from_path(file_path)
+            .first_or_octet_stream()
+            .essence_str()
+            .to_string();
+        headers.insert("Content-Type", HeaderValue::from_str(&mime_type)?);
+
+        let url = format!("{}/resume/{}", gateway_url, file_name);
+        let mut attempt = 0;
+
+        loop {
+            let resp = client
+                .put(&url)
+                .headers(headers.clone())
+                .body(buffer[..chunk_len].to_vec())
+                .send()
+                .await;
+
+            match resp {
+                Ok(response) if response.status().is_success() => {
+                    let status = response.status().as_u16();
+                    let text = response.text().await?;
+                    let upload_response: UploadResponse = serde_json::from_str(&text)
+                        .map_err(|e| Error::Custom(format!("Failed to parse response: {}", e)))?;
+
+                    if status == 308 {
+                        println!("Chunk {}-{} uploaded, continuing...", start, end);
+                        save_resume_point(&resume_path, end + 1)?;
+                        start = end + 1;
+                        break;
+                    } else if status == 200 {
+                        println!("Final chunk uploaded successfully: {}-{}", start, end);
+                        let _ = fs::remove_file(&resume_path).await;
+                        return Ok(upload_response);
+                    } else {
+                        return Err(Error::Custom(format!(
+                            "Unexpected status {}: {}",
+                            status, upload_response.msg
+                        )));
+                    }
+                }
+                Ok(response) => {
+                    attempt += 1;
+                    eprintln!(
+                        "HTTP error {} for chunk {}-{}",
+                        response.status(),
+                        start,
+                        end
+                    );
+                }
+                Err(e) => {
+                    attempt += 1;
+                    eprintln!("Network error uploading chunk {}-{}: {}", start, end, e);
+                }
+            }
+
+            if attempt >= MAX_RETRIES {
+                return Err(Error::Custom(format!(
+                    "Failed to upload chunk {}-{} after {} retries",
+                    start, end, attempt
+                )));
+            }
+
+            let backoff = 2u64.pow(attempt.into()) * 100;
+            println!("Retrying in {}ms...", backoff);
+            tokio::time::sleep(Duration::from_millis(backoff)).await;
+        }
+    }
+
+    Err(Error::Custom(
+        "Upload finished but server did not return final response.".into(),
+    ))
+}
+
+fn save_resume_point(path: &str, byte: u64) -> std::io::Result<()> {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(path)?;
+    writeln!(file, "{}", byte)?;
+    Ok(())
+}
+
+fn read_resume_point(path: &str) -> Option<u64> {
+    if let Ok(content) = std::fs::read_to_string(path) {
+        if let Ok(byte) = content.trim().parse::<u64>() {
+            return Some(byte);
+        }
+    }
+    None
 }
 
 pub async fn download(

@@ -139,6 +139,14 @@ pub async fn upload_file_in_chunks_resumable(
     let resume_path = format!("{}{}", file_path, RESUME_FILE_SUFFIX);
     let mut start = read_resume_point(&resume_path).unwrap_or(0);
 
+    if start >= file_size {
+        println!(
+            "Invalid resume point {} for file size {}, resetting to 0.",
+            start, file_size
+        );
+        start = 0;
+    }
+
     if start > 0 {
         println!("Resuming from byte {}...", start);
         file.seek(tokio::io::SeekFrom::Start(start)).await?;
@@ -149,12 +157,19 @@ pub async fn upload_file_in_chunks_resumable(
 
     while start < file_size {
         let end = (start + CHUNK_SIZE as u64 - 1).min(file_size - 1);
-        if start > end {
+
+        if start > end || end >= file_size {
+            println!("Invalid chunk range: start={}, end={}, file_size={}", start, end, file_size);
             break;
         }
 
         let chunk_len = (end - start + 1) as usize;
         file.read_exact(&mut buffer[..chunk_len]).await?;
+
+        println!(
+            "Uploading chunk: start={}, end={}, file_size={}, chunk_len={}",
+            start, end, file_size, chunk_len
+        );
 
         let mut headers = HeaderMap::new();
         headers.insert("Territory", HeaderValue::from_str(territory)?);
@@ -164,11 +179,12 @@ pub async fn upload_file_in_chunks_resumable(
             "Signature",
             HeaderValue::from_str(&signed_msg.0.to_base58())?,
         );
-        headers.insert(
-            "Content-Range",
-            HeaderValue::from_str(&format!("bytes {}-{}/{}", start, end, file_size))?,
-        );
+
+        let content_range = format!("bytes {}-{}/{}", start, end, file_size);
+        headers.insert("Content-Range", HeaderValue::from_str(&content_range)?);
         headers.insert("Content-Length", HeaderValue::from(chunk_len as u64));
+
+        println!("Sending Content-Range: {}", content_range);
 
         let mime_type = from_path(file_path)
             .first_or_octet_stream()

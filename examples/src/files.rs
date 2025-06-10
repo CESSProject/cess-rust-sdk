@@ -177,9 +177,9 @@ mod test {
         use std::path::Path;
 
         let gateway = "https://deoss-sgp.cess.network";
-        let file = "waves.mp4"; // replace with a real test file path
-        let file_name = "waves.mp4"; // name to be used in request
-        let territory = "Movies";
+        let file = "Win11_24H2_English_x64.iso";
+        let file_name = "Win11_24H2_English_x64.iso";
+        let territory = "large2";
 
         let mnemonic =
             "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
@@ -188,7 +188,6 @@ mod test {
         let message = get_random_code(16).unwrap();
         let signature = pair.sign(message.as_bytes());
 
-        // Perform the resumable upload
         let result = upload_file_in_chunks_resumable(
             file, gateway, file_name, territory, &acc, &message, signature,
         )
@@ -199,7 +198,6 @@ mod test {
 
                 println!("Upload completed successfully .");
                 dbg!(&a);
-                // You might also want to verify the server response if needed.
             }
             Err(e) => {
                 println!("Upload failed with error: {:?}", e);
@@ -207,7 +205,6 @@ mod test {
             }
         }
 
-        // Optionally assert that resume file is gone
         let resume_path = format!("{}{}", file, RESUME_FILE_SUFFIX);
         assert!(
             !Path::new(&resume_path).exists(),

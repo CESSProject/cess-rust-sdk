@@ -188,11 +188,8 @@ pub async fn upload_file_in_chunks_resumable(
                 .await;
 
             match resp {
-                Ok(response) if response.status().is_success() => {
+                Ok(response) => {
                     let status = response.status().as_u16();
-                    let text = response.text().await?;
-                    let upload_response: UploadResponse = serde_json::from_str(&text)
-                        .map_err(|e| Error::Custom(format!("Failed to parse response: {}", e)))?;
 
                     if status == 308 {
                         println!("Chunk {}-{} uploaded, continuing...", start, end);
@@ -200,24 +197,21 @@ pub async fn upload_file_in_chunks_resumable(
                         start = end + 1;
                         break;
                     } else if status == 200 {
+                        let text = response.text().await?;
+                        let upload_response: UploadResponse =
+                            serde_json::from_str(&text).map_err(|e| {
+                                Error::Custom(format!("Failed to parse response: {}", e))
+                            })?;
                         println!("Final chunk uploaded successfully: {}-{}", start, end);
                         let _ = fs::remove_file(&resume_path).await;
                         return Ok(upload_response);
                     } else {
+                        let body = response.text().await.unwrap_or_default();
                         return Err(Error::Custom(format!(
                             "Unexpected status {}: {}",
-                            status, upload_response.msg
+                            status, body
                         )));
                     }
-                }
-                Ok(response) => {
-                    attempt += 1;
-                    eprintln!(
-                        "HTTP error {} for chunk {}-{}",
-                        response.status(),
-                        start,
-                        end
-                    );
                 }
                 Err(e) => {
                     attempt += 1;

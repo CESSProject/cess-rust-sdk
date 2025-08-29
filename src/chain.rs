@@ -8,14 +8,43 @@ use crate::core::Error;
 use crate::{init_api, StorageAddress, Yes, H256};
 use async_trait::async_trait;
 use std::marker::Sync;
+use std::sync::Arc;
 use subxt::backend::StreamOfResults;
-use subxt::ext::sp_core::sr25519::Pair;
 use subxt::storage::StorageKeyValuePair;
 use subxt::{
     blocks::ExtrinsicEvents,
-    tx::{PairSigner, Payload, Signer as SignerT},
+    tx::{Payload, Signer as SubxtSignerTrait},
     Config, PolkadotConfig,
 };
+
+pub type AnySigner = Box<dyn SubxtSignerTrait<PolkadotConfig> + Send + Sync>;
+
+#[derive(Clone)]
+pub struct DynSigner {
+    inner: Arc<AnySigner>,
+}
+
+impl DynSigner {
+    pub fn new(inner: AnySigner) -> Self {
+        Self {
+            inner: Arc::new(inner),
+        }
+    }
+}
+
+impl SubxtSignerTrait<PolkadotConfig> for DynSigner {
+    fn account_id(&self) -> <PolkadotConfig as Config>::AccountId {
+        self.inner.account_id()
+    }
+
+    fn address(&self) -> <PolkadotConfig as Config>::Address {
+        self.inner.address()
+    }
+
+    fn sign(&self, payload: &[u8]) -> <PolkadotConfig as Config>::Signature {
+        self.inner.sign(payload)
+    }
+}
 
 #[async_trait]
 pub trait Chain {
@@ -121,7 +150,7 @@ pub trait Call: Chain {
     type Api;
 
     fn get_api() -> Self::Api;
-    fn get_pair_signer(&self) -> PairSigner<PolkadotConfig, Pair>;
+    fn get_signer(&self) -> &DynSigner;
 
     fn find_first<E: subxt::events::StaticEvent>(
         event: ExtrinsicEvents<PolkadotConfig>,
@@ -139,14 +168,12 @@ pub trait Call: Chain {
         }
     }
 
-    async fn sign_and_submit_tx_then_watch_default<Call, Signer, T>(
+    async fn sign_and_submit_tx_then_watch_default<Call>(
         tx: &Call,
-        from: &Signer,
+        from: &DynSigner,
     ) -> Result<ExtrinsicEvents<PolkadotConfig>, Error>
     where
         Call: Payload + Sync,
-        Signer: SignerT<T> + subxt::tx::Signer<subxt::PolkadotConfig> + Sync,
-        T: Config,
     {
         let api = init_api().await?;
 

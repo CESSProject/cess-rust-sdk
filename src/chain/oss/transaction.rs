@@ -1,4 +1,4 @@
-use crate::chain::{Call, Chain};
+use crate::chain::{AnySigner, Call, Chain, DynSigner};
 use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
 use crate::polkadot::oss::calls::types::proxy_authorzie::Sig;
@@ -20,7 +20,7 @@ impl_api_provider!(TransactionApiProvider, TransactionApi, polkadot::tx().oss())
 
 pub type TxHash = String;
 pub struct StorageTransaction {
-    pair: PairS,
+    signer: DynSigner,
 }
 
 impl Chain for StorageTransaction {}
@@ -32,23 +32,32 @@ impl Call for StorageTransaction {
         crate::core::get_api::<TransactionApiProvider>()
     }
 
-    fn get_pair_signer(&self) -> PairSigner<PolkadotConfig, PairS> {
-        PairSigner::new(self.pair.clone())
+    fn get_signer(&self) -> &DynSigner {
+        &self.signer
     }
 }
 
 impl StorageTransaction {
-    pub fn new(mnemonic: &str) -> Self {
+    pub fn from_mnemonic(mnemonic: &str) -> Self {
         let pair = PairS::from_string(mnemonic, None).unwrap();
-        Self { pair }
+        let boxed: AnySigner = Box::new(PairSigner::<PolkadotConfig, _>::new(pair));
+        Self {
+            signer: DynSigner::new(boxed),
+        }
+    }
+
+    pub fn with_signer(signer: AnySigner) -> Self {
+        Self {
+            signer: DynSigner::new(signer),
+        }
     }
 
     pub async fn authorize(&self, account: &str) -> Result<(TxHash, Authorize), Error> {
         let api = Self::get_api();
         let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.authorize(account);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<Authorize>(event)
     }
@@ -60,8 +69,7 @@ impl StorageTransaction {
         let api = Self::get_api();
         let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.cancel_authorize(account);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<CancelAuthorize>(event)
     }
@@ -73,8 +81,7 @@ impl StorageTransaction {
     ) -> Result<(TxHash, OssRegister), Error> {
         let api = Self::get_api();
         let tx = api.register(endpoint, domain);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<OssRegister>(event)
     }
@@ -86,8 +93,7 @@ impl StorageTransaction {
     ) -> Result<(TxHash, OssUpdate), Error> {
         let api = Self::get_api();
         let tx = api.update(endpoint, domain);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<OssUpdate>(event)
     }
@@ -95,8 +101,7 @@ impl StorageTransaction {
     pub async fn destroy(&self) -> Result<(TxHash, OssDestroy), Error> {
         let api = Self::get_api();
         let tx = api.destroy();
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<OssDestroy>(event)
     }
@@ -110,8 +115,7 @@ impl StorageTransaction {
         let api = Self::get_api();
         let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.proxy_authorzie(account.0, sig, payload);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
         let hash = event.extrinsic_hash();
         Ok(format!("0x{}", hex::encode(hash.0)))
     }
@@ -125,8 +129,7 @@ impl StorageTransaction {
         let api = Self::get_api();
         let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let tx = api.evm_proxy_authorzie(account.0, sig, payload);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
         let hash = event.extrinsic_hash();
         Ok(format!("0x{}", hex::encode(hash.0)))
     }

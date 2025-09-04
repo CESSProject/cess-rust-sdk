@@ -4,6 +4,7 @@ pub mod chain;
 pub mod constants;
 pub mod core;
 pub mod gateway;
+pub mod ledger;
 pub mod utils;
 
 use core::Error;

@@ -11,14 +11,14 @@ use tokio::io::AsyncRead;
 use tokio_util::io::{ReaderStream, StreamReader};
 
 pub struct UploadParams<R> {
-    gateway_url: String,
-    reader: R,
-    object_name: String,
-    territory: String,
-    acc: String,
-    message: String,
-    signed_msg: Signature,
-    cipher: Option<String>,
+    pub gateway_url: String,
+    pub reader: R,
+    pub object_name: String,
+    pub territory: String,
+    pub acc: String,
+    pub message: String,
+    pub signed_msg: Signature,
+    pub cipher: Option<String>,
 }
 
 pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(

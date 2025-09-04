@@ -4,6 +4,7 @@ use crate::impl_api_provider;
 use crate::polkadot::balances::events::Transfer;
 use crate::polkadot::{self, balances::calls::TransactionApi};
 // use crate::utils::hash_from_string;
+use crate::ledger::LedgerSigner;
 use std::str::FromStr;
 use subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
 use subxt::ext::subxt_core::utils::AccountId32;
@@ -49,6 +50,15 @@ impl StorageTransaction {
         Self {
             signer: DynSigner::new(signer),
         }
+    }
+
+    // Hardware Wallet Leddger Support
+    pub fn from_ledger(derivation_path: &str) -> Result<Self, Error> {
+        let ledger = LedgerSigner::new(derivation_path)?;
+        let boxed: AnySigner = Box::new(ledger);
+        Ok(Self {
+            signer: DynSigner::new(boxed),
+        })
     }
 
     pub async fn transfer(&self, account: &str, amount: u128) -> Result<(TxHash, Transfer), Error> {

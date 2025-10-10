@@ -5,7 +5,6 @@ use reqwest::{
     header::{HeaderMap, HeaderValue},
     multipart, Client, RequestBuilder,
 };
-use std::os::unix::fs::MetadataExt;
 use subxt::ext::sp_core::sr25519::Signature;
 use tokio::{
     fs::{self, File},
@@ -71,7 +70,7 @@ async fn upload_file(
         return Err("Given path is not a file.".into());
     }
 
-    if metadata.size() == 0 {
+    if metadata.len() == 0 {
         return Err("File is an empty file.".into());
     }
 

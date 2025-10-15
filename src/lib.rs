@@ -5,6 +5,7 @@ pub mod constants;
 pub mod core;
 pub mod gateway;
 pub mod ledger;
+pub mod retriever;
 pub mod utils;
 
 use core::Error;

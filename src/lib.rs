@@ -3,6 +3,11 @@
 pub mod chain;
 pub mod constants;
 pub mod core;
+
+#[deprecated(
+    since = "0.8.0-premainnet",
+    note = "The `gateway` module is deprecated. Please use the `retriever` module instead."
+)]
 pub mod gateway;
 pub mod ledger;
 pub mod retriever;

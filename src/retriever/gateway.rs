@@ -3,9 +3,10 @@ use hex;
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::{collections::HashMap, error::Error, fs::File, io::Read, path::Path};
 use subxt::ext::sp_core::crypto::{Ss58AddressFormat, Ss58Codec};
 use subxt::ext::sp_core::{sr25519, ByteArray as _};
-use std::{collections::HashMap, error::Error, fs::File, io::Read, path::Path};
 
 pub enum Endpoint {
     GenToken,
@@ -182,8 +183,7 @@ pub async fn download_data(
         if pkx_bytes.len() != 32 {
             return Err("invalid pkx length".into());
         }
-        let pkx_pub = sr25519::Public::from_slice(pkx_bytes)
-            .map_err(|_| "invalid Pkx length")?;
+        let pkx_pub = sr25519::Public::from_slice(pkx_bytes).map_err(|_| "invalid Pkx length")?;
         let pkx_ss58 = pkx_pub.to_ss58check_with_version(Ss58AddressFormat::custom(11330));
         headers.insert("Pkx".into(), pkx_ss58);
     }
@@ -267,7 +267,7 @@ pub async fn upload_file(opts: UploadFileOpts<'_>) -> Result<Vec<u8>, Box<dyn Er
     let client = Client::new();
     let resp = client
         .post(&url)
-        .header("Authorization", format!("Bearer {}", opts.token))
+        .header("token", format!("Bearer {}", opts.token))
         .multipart(form)
         .send()
         .await?;
@@ -276,9 +276,7 @@ pub async fn upload_file(opts: UploadFileOpts<'_>) -> Result<Vec<u8>, Box<dyn Er
     Ok(bytes.to_vec())
 }
 
-pub async fn request_batch_upload(
-    req: BatchUploadRequest<'_>
-) -> Result<String, Box<dyn Error>> {
+pub async fn request_batch_upload(req: BatchUploadRequest<'_>) -> Result<String, Box<dyn Error>> {
     let info = BatchFilesInfo {
         file_name: Some(req.filename.to_string()),
         territory: Some(req.territory.to_string()),
@@ -300,7 +298,6 @@ pub async fn request_batch_upload(
     Ok(resp.data)
 }
 
-
 pub async fn batch_upload_file<R: std::io::Read + std::io::Seek>(
     base_url: &str,
     token: &str,
@@ -317,8 +314,10 @@ pub async fn batch_upload_file<R: std::io::Read + std::io::Seek>(
     reader.seek(std::io::SeekFrom::Start(start))?;
     reader.read_exact(&mut buf)?;
 
-    let form = reqwest::multipart::Form::new()
-        .part("file", reqwest::multipart::Part::bytes(buf).file_name("part".to_string()));
+    let form = reqwest::multipart::Form::new().part(
+        "file",
+        reqwest::multipart::Part::bytes(buf).file_name("part".to_string()),
+    );
 
     let client = reqwest::Client::new();
     let url = format!("{}{}", base_url, Endpoint::BatchUpload.path());
@@ -334,4 +333,19 @@ pub async fn batch_upload_file<R: std::io::Read + std::io::Seek>(
     let resp_bytes = resp.bytes().await?;
     let resp: Response<String> = serde_json::from_slice(&resp_bytes)?;
     Ok(resp.data)
+}
+
+pub fn wrap_message_for_signing(msg: &[u8]) -> Vec<u8> {
+    // Step 1: compute SHA-256 hash of the message
+    let mut hasher = Sha256::new();
+    hasher.update(msg);
+    let hash = hasher.finalize();
+
+    // Step 2: wrap the hash with <Bytes> and </Bytes>
+    let mut wrapped = Vec::with_capacity(8 + hash.len() + 9); // "<Bytes>" + hash + "</Bytes>"
+    wrapped.extend_from_slice(b"<Bytes>");
+    wrapped.extend_from_slice(&hash);
+    wrapped.extend_from_slice(b"</Bytes>");
+
+    wrapped
 }

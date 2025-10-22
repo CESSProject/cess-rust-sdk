@@ -8,3 +8,6 @@ cess-rust-sdk ={ path = "../"}
 dotenv = "0.15.0"
 tokio = { version = "1.38.0", features = ["full"] }
 sp-keyring = "34.0.0"
+sha2 = "0.10.9"
+hex = "0.4.3"
+rand = "0.8.5"

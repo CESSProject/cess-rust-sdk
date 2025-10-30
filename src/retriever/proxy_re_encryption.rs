@@ -10,6 +10,7 @@ use std::convert::TryInto;
 use std::error::Error;
 use thiserror::Error;
 
+/// Errors that can occur in proxy re-encryption and capsule operations.
 #[derive(Debug, Error)]
 pub enum RetrieverError {
     #[error("json error: {0}")]
@@ -31,14 +32,17 @@ pub enum RetrieverError {
     Other(String),
 }
 
-/// In-memory capsule with RistrettoPoint/Scalar
+/// Represents a capsule containing elliptic curve points and a scalar used in proxy re-encryption.
 pub struct Capsule {
+    /// Point `e` on the Ristretto curve.
     pub e: RistrettoPoint,
+    /// Point `v` on the Ristretto curve.
     pub v: RistrettoPoint,
+    /// Scalar `s` used in capsule verification.
     pub s: Scalar,
 }
 
-/// JSON-serializable capsule: base64 strings for compressed points and scalar bytes
+/// JSON-compatible capsule format, where each field is encoded as a Base64 string.
 #[derive(Serialize, Deserialize)]
 struct SerializableCapsule {
     e: String,
@@ -47,6 +51,7 @@ struct SerializableCapsule {
 }
 
 impl Capsule {
+    /// Converts an in-memory capsule into a serializable (Base64-encoded) form.
     fn to_serializable(&self) -> SerializableCapsule {
         let e_c = self.e.compress();
         let v_c = self.v.compress();
@@ -59,17 +64,20 @@ impl Capsule {
         }
     }
 
+    /// Converts a Base64-encoded capsule back into an in-memory representation.
     fn from_serializable(sc: &SerializableCapsule) -> Result<Self, RetrieverError> {
         let e_b = general_purpose::STANDARD.decode(&sc.e)?;
         let v_b = general_purpose::STANDARD.decode(&sc.v)?;
         let s_b = general_purpose::STANDARD.decode(&sc.s)?;
 
+        // Validate field lengths
         if e_b.len() != 32 || v_b.len() != 32 || s_b.len() != 32 {
             return Err(RetrieverError::BadLen(
                 "serialized capsule fields must be 32 bytes".into(),
             ));
         }
 
+        // Reconstruct compressed points
         let e_comp = CompressedRistretto::from_slice(&e_b)
             .map_err(|_| RetrieverError::Crypto("invalid slice length for e".into()))?;
         let v_comp = CompressedRistretto::from_slice(&v_b)
@@ -82,6 +90,7 @@ impl Capsule {
             .decompress()
             .ok_or_else(|| RetrieverError::Crypto("invalid compressed point v".into()))?;
 
+        // Reconstruct scalar `s`
         let s_arr: [u8; 32] = s_b
             .as_slice()
             .try_into()
@@ -92,8 +101,14 @@ impl Capsule {
     }
 }
 
-/// Re-encrypt key: input capsule JSON and rk bytes (32 bytes scalar or hex/base64 text of 32 bytes).
-/// Returns new capsule JSON bytes.
+/// Performs re-encryption of a capsule using a re-encryption key.
+///
+/// # Arguments
+/// * `capsule_json` - The JSON-encoded capsule (Base64 fields).
+/// * `rk_bytes` - The 32-byte re-encryption key (raw, hex, or base64).
+///
+/// # Returns
+/// JSON-encoded bytes of the new re-encrypted capsule.
 pub fn re_encrypt_key(capsule_json: &[u8], rk_bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let sc: SerializableCapsule = serde_json::from_slice(capsule_json)?;
     let capsule = Capsule::from_serializable(&sc)?;
@@ -128,10 +143,15 @@ pub fn re_encrypt_key(capsule_json: &[u8], rk_bytes: &[u8]) -> Result<Vec<u8>, B
     Ok(out)
 }
 
-/// Decrypt re-key: given mini/secret key bytes (ms_bytes), pk_x bytes (32), and re-encrypted capsule json.
-/// Returns 32-byte AES key (SHA256(point))
+/// Decrypts a re-encrypted capsule to derive a symmetric key (AES-256 key).
 ///
-/// ms_bytes: should be either 32 bytes (mini-secret seed) or 64 bytes (expanded SecretKey) depending on source.
+/// # Arguments
+/// * `ms_bytes` - The secret key bytes (32 or 64 bytes).
+/// * `pk_x_bytes` - The 32-byte public key of the re-encryption key generator.
+/// * `new_capsule_json` - JSON-encoded re-encrypted capsule.
+///
+/// # Returns
+/// 32-byte derived AES key.
 pub fn decrypt_re_key(
     ms_bytes: &[u8],
     pk_x_bytes: &[u8],
@@ -173,6 +193,7 @@ pub fn decrypt_re_key(
     d_hasher.update(s_point.compress().as_bytes());
     let d = Scalar::from_hash(d_hasher);
 
+    // Derive shared point and AES key
     let sum = new_capsule.e + new_capsule.v;
     let point = d * sum;
 
@@ -183,7 +204,7 @@ pub fn decrypt_re_key(
     Ok(key.to_vec())
 }
 
-/// Decrypt original capsule: given ms_bytes (mini/secret) and capsule JSON -> AES key (32 bytes)
+/// Decrypts an original (non-re-encrypted) capsule to obtain the AES key.
 pub fn decrypt_key(ms_bytes: &[u8], capsule_json: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let sc: SerializableCapsule = serde_json::from_slice(capsule_json)?;
     let capsule = Capsule::from_serializable(&sc)?;
@@ -213,8 +234,16 @@ pub fn decrypt_key(ms_bytes: &[u8], capsule_json: &[u8]) -> Result<Vec<u8>, Box<
     Ok(sha.finalize().to_vec())
 }
 
-/// Generate re-encryption key: inputs ms_bytes (mini/secret) and pk_b_bytes (32)
-/// Returns (rk_bytes (32), pk_x_bytes (32))
+/// Generates a re-encryption key and associated ephemeral public key.
+///
+/// # Arguments
+/// * `ms_bytes` - Secret key of the data owner (32 or 64 bytes).
+/// * `pk_b_bytes` - 32-byte public key of the delegate (receiver).
+///
+/// # Returns
+/// Tuple containing:
+/// - `rk_bytes`: 32-byte re-encryption key.
+/// - `pk_x_bytes`: 32-byte ephemeral public key to send to the delegate.
 pub fn gen_re_encryption_key(
     ms_bytes: &[u8],
     pk_b_bytes: &[u8],
@@ -263,9 +292,7 @@ pub fn gen_re_encryption_key(
     Ok((rk_bytes.to_vec(), pkx_bytes.to_vec()))
 }
 
-/// parse scalar from input bytes:
-/// - if exactly 32 bytes -> use them as scalar little-endian
-/// - otherwise try base64 decode; if still not 32 -> try hex decode
+/// Parses arbitrary scalar input as bytes, Base64, or hex.
 pub fn parse_scalar_bytes(b: &[u8]) -> Result<Scalar, RetrieverError> {
     if b.len() == 32 {
         let arr: [u8; 32] = b
@@ -299,7 +326,10 @@ pub fn parse_scalar_bytes(b: &[u8]) -> Result<Scalar, RetrieverError> {
     ))
 }
 
-/// Convert schnorrkel PublicKey to RistrettoPoint (assumes the public key encodes a compressed Ristretto)
+/// Converts a Schnorrkel public key into a Ristretto point.
+///
+/// # Panics
+/// If the public key does not represent a valid compressed Ristretto point.
 fn ristretto_point_from_pk(pk: &PublicKey) -> RistrettoPoint {
     let compressed = CompressedRistretto(pk.to_bytes());
     compressed.decompress().expect("Invalid public key")

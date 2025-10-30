@@ -1,3 +1,13 @@
+//! # Retriever Gateway API Client Module
+//!
+//! This module provides asynchronous utilities to interact with a gateway service,
+//! including secure file upload/download, proxy re-encryption, batch uploads,
+//! and access token generation.
+//!
+//! It is designed to integrate with decentralized storage or encrypted data
+//! management systems that use re-encryption and territory-based access control.
+//! 
+
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use hex;
 use reqwest::multipart::{Form, Part};
@@ -9,6 +19,9 @@ use subxt::ext::sp_core::crypto::{Ss58AddressFormat, Ss58Codec};
 use subxt::ext::sp_core::{sr25519, ByteArray as _};
 use tokio::io::{AsyncReadExt as _, AsyncSeekExt as _};
 
+/// Gateway endpoint enumeration.
+///
+/// Each variant represents a specific API endpoint path used by the gateway.
 pub enum Endpoint {
     GenToken,
     UploadFile,
@@ -20,6 +33,7 @@ pub enum Endpoint {
 }
 
 impl Endpoint {
+    /// Returns the URL path string for the given endpoint.
     pub fn path(&self) -> &'static str {
         match self {
             Endpoint::GenToken => "/gateway/gentoken",
@@ -33,6 +47,9 @@ impl Endpoint {
     }
 }
 
+/// Generic API response wrapper.
+///
+/// Used to deserialize gateway responses with a standard structure.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Response<T> {
     pub code: i32,
@@ -40,6 +57,7 @@ pub struct Response<T> {
     pub data: T,
 }
 
+/// Proxy re-encryption request body.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ReencryptReq {
     pub did: String,
@@ -47,6 +65,7 @@ pub struct ReencryptReq {
     pub rk: Vec<u8>,
 }
 
+/// Metadata for a file stored or uploaded via the gateway.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FileInfo {
     pub fid: String,
@@ -59,6 +78,7 @@ pub struct FileInfo {
     pub fragments: Option<Vec<Vec<String>>>,
 }
 
+/// Response structure returned after a successful batch upload.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BatchUploadResp {
     pub fid: String,
@@ -66,6 +86,7 @@ pub struct BatchUploadResp {
     pub file_info: FileInfo,
 }
 
+/// File batch upload metadata used for initiating or resuming uploads.
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct BatchFilesInfo {
     pub hash: Option<String>,
@@ -86,6 +107,7 @@ pub struct BatchFilesInfo {
     pub update_date: Option<String>,
 }
 
+/// File upload configuration options.
 pub struct UploadFileOpts<'a> {
     pub base_url: &'a str,
     pub token: &'a str,
@@ -97,6 +119,7 @@ pub struct UploadFileOpts<'a> {
     pub encrypt: bool,
 }
 
+/// Request structure for initializing a batch upload.
 #[derive(Debug)]
 pub struct BatchUploadRequest<'a> {
     pub base_url: &'a str,
@@ -109,10 +132,13 @@ pub struct BatchUploadRequest<'a> {
     pub no_tx_proxy: bool,
 }
 
+/// Default part size (32 MB) for chunked uploads.
 #[allow(dead_code)]
 const DEFAULT_PART_SIZE: usize = 32 * 1024 * 1024;
 
-/// generic http helper
+/// Sends a generic HTTP request with optional headers and body.
+///
+/// Returns the response body as a `Vec<u8>` if the request succeeds.
 pub async fn send_http_request(
     method: Method,
     url: &str,
@@ -143,7 +169,9 @@ pub async fn send_http_request(
     Ok(bytes.to_vec())
 }
 
-/// Proxy re-encryption
+/// Performs proxy re-encryption on encrypted data.
+///
+/// This is typically used to re-encrypt a capsule for another recipient.
 pub async fn proxy_re_encrypt(
     base_url: &str,
     token: &str,
@@ -166,7 +194,7 @@ pub async fn proxy_re_encrypt(
     Ok(resp.data)
 }
 
-/// Download file
+/// Downloads a file or segment from the gateway, optionally decrypting with proxy re-encryption parameters.
 pub async fn download_data(
     base_url: &str,
     fid: &str,
@@ -201,7 +229,7 @@ pub async fn download_data(
     Ok(())
 }
 
-/// Retrieve capsule + gateway pubkey
+/// Retrieves a capsule and the corresponding gateway public key for a file.
 pub async fn get_precapsule_and_pubkey(
     base_url: &str,
     fid: &str,
@@ -218,7 +246,9 @@ pub async fn get_precapsule_and_pubkey(
     Ok((data["capsule"].clone(), data["pubkey"].clone()))
 }
 
-/// Generate gateway access token
+/// Generates an access token for authenticated gateway operations.
+///
+/// Requires a signed message using the user's private key.
 pub async fn gen_gateway_access_token(
     base_url: &str,
     message: &str,
@@ -249,7 +279,10 @@ pub async fn gen_gateway_access_token(
     Ok(resp.data)
 }
 
-/// Upload file (sync or async)
+/// Uploads a file to the gateway.
+///
+/// Supports both synchronous and asynchronous upload modes,
+/// and optional encryption.
 pub async fn upload_file(opts: UploadFileOpts<'_>) -> Result<Vec<u8>, Box<dyn Error>> {
     let url = format!("{}{}", opts.base_url, Endpoint::UploadFile.path());
 
@@ -284,6 +317,7 @@ pub async fn upload_file(opts: UploadFileOpts<'_>) -> Result<Vec<u8>, Box<dyn Er
     Ok(bytes.to_vec())
 }
 
+/// Requests initialization for batch upload, preparing metadata for large file transfers.
 pub async fn request_batch_upload(req: BatchUploadRequest<'_>) -> Result<String, Box<dyn Error>> {
     let info = BatchFilesInfo {
         file_name: Some(req.filename.to_string()),
@@ -306,6 +340,9 @@ pub async fn request_batch_upload(req: BatchUploadRequest<'_>) -> Result<String,
     Ok(resp.data)
 }
 
+/// Uploads a single chunk of a large file as part of a batch upload session.
+///
+/// Each chunk is defined by a byte range `[start, end)`.
 pub async fn batch_upload_file<R>(
     base_url: &str,
     token: &str,
@@ -354,6 +391,8 @@ where
     Ok(resp.data)
 }
 
+/// Wraps a message for signing by computing its SHA-256 hash
+/// and embedding it in `<Bytes>` XML-like tags.
 pub fn wrap_message_for_signing(msg: &[u8]) -> Vec<u8> {
     // Step 1: compute SHA-256 hash of the message
     let mut hasher = Sha256::new();

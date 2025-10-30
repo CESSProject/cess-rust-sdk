@@ -1,5 +1,35 @@
-use std::sync::Arc;
+//! # Ledger Signer for Polkadot-based Networks
+//!
+//! This module defines [`LedgerSigner`], a Subxt-compatible signer implementation
+//! that integrates with a Ledger hardware wallet using the `ledger-transport-hid`
+//! interface and custom APDU commands.
+//!
+//! It supports:
+//! - Deriving a public key from a given BIP44 derivation path
+//! - Signing arbitrary payloads via the Ledger device
+//!
+//! ## APDU Commands
+//! - `CLA = 0xF9`: Ledger application class byte for custom CESS/Polkadot app
+//! - `INS = 0x01`: "Get Address" command
+//! - `INS = 0x02`: "Sign Message" command
+//!
+//! ## Error Handling
+//! Custom [`Error`] variants wrap underlying transport and parsing issues.
+//!
+//! ## Example
+//! ```ignore
+//! let signer = LedgerSigner::new("m/44'/354'/0'/0'/0'")?;
+//! let signature = signer.sign(b"example payload");
+//! println!("Account ID: {:?}", signer.account_id());
+//! ```
+//!
+//! ## Notes
+//! - Requires the Ledger Polkadot/CESS app to be open on the device.
+//! - BIP44 paths must start with `m/`.
+//! - Each signing operation sends the message in 230-byte APDU chunks.
+//! 
 
+use std::sync::Arc;
 use super::core::Error;
 use ledger_apdu::APDUAnswer;
 use ledger_transport::APDUCommand;
@@ -11,8 +41,10 @@ use subxt::{
     Config, PolkadotConfig,
 };
 
+/// Maximum chunk size for APDU messages.
 const APDU_CHUNK_SIZE: usize = 230;
 
+/// A signer that uses a Ledger hardware wallet to sign transactions or payloads.
 pub struct LedgerSigner {
     _hidapi: Arc<HidApi>,
     transport: TransportNativeHID,
@@ -21,20 +53,28 @@ pub struct LedgerSigner {
 }
 
 impl LedgerSigner {
+    /// Creates a new [`LedgerSigner`] using the given BIP44 derivation path.
+    ///
+    /// This connects to the Ledger device via HID transport and retrieves the
+    /// corresponding account’s public key.
     pub fn new(derivation_path: &str) -> Result<Self, Error> {
         let hid = HidApi::new().map_err(Error::Hid)?;
         let hid_arc = Arc::new(hid);
 
+        // Establish transport with Ledger
         let transport =
             TransportNativeHID::new(&hid_arc).map_err(|e| Error::Transport(format!("{:?}", e)))?;
 
+        // Retrieve public key from Ledger
         let pubkey = Self::send_get_address_sync(&transport, derivation_path)
             .map_err(|e| Error::APDU(format!("{:?}", e)))?;
 
+        // Validate public key length (should be 32 bytes for sr25519)
         if pubkey.len() != 32 {
             return Err(Error::BadResponse);
         }
 
+        // Convert to AccountId32
         let mut arr = [0u8; 32];
         arr.copy_from_slice(&pubkey[..32]);
 
@@ -47,6 +87,7 @@ impl LedgerSigner {
         })
     }
 
+    /// Sends an APDU command to retrieve the public key for the specified path.
     fn send_get_address_sync(
         transport: &TransportNativeHID,
         derivation_path: &str,
@@ -76,6 +117,9 @@ impl LedgerSigner {
         Ok(data)
     }
 
+    /// Sends a message to the Ledger for signing.
+    ///
+    /// This handles APDU chunking for long payloads and returns the final signature bytes.
     fn send_sign_sync(&self, message: &[u8]) -> Result<Vec<u8>, String> {
         let path_bytes = pack_bip44_path_bytes(&self.derivation_path)?;
         // INIT APDU: path bytes + message length (u16 BE) — adjust per app
@@ -119,6 +163,10 @@ impl LedgerSigner {
     }
 }
 
+/// Converts a BIP44 path string (e.g. `m/44'/354'/0'/0'/0'`) into its byte representation.
+///
+/// Each path element is encoded as a 4-byte BE integer with the hardened bit (0x80000000) set
+/// if the component ends with `'` or `h`.
 fn pack_bip44_path_bytes(path: &str) -> Result<Vec<u8>, String> {
     let s = path.trim().strip_prefix("m/").unwrap_or(path);
     let parts: Vec<&str> = s.split("/").collect();
@@ -140,7 +188,8 @@ fn pack_bip44_path_bytes(path: &str) -> Result<Vec<u8>, String> {
     Ok(out)
 }
 
-/// Implement the Subxt Signer trait so this can be boxed into `AnySigner`.
+/// Implements Subxt’s [`Signer`] trait for [`LedgerSigner`],
+/// allowing it to sign extrinsics and messages in a Polkadot/Substrate context.
 impl SubxtSignerTrait<PolkadotConfig> for LedgerSigner {
     fn account_id(&self) -> <PolkadotConfig as Config>::AccountId {
         self.account_id.clone()

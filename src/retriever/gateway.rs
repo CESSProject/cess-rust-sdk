@@ -7,6 +7,7 @@ use sha2::{Digest, Sha256};
 use std::{collections::HashMap, error::Error, fs::File, io::Read, path::Path};
 use subxt::ext::sp_core::crypto::{Ss58AddressFormat, Ss58Codec};
 use subxt::ext::sp_core::{sr25519, ByteArray as _};
+use tokio::io::{AsyncReadExt as _, AsyncSeekExt as _};
 
 pub enum Endpoint {
     GenToken,
@@ -56,6 +57,13 @@ pub struct FileInfo {
     pub territory: Option<String>,
     pub segments: Option<Vec<String>>,
     pub fragments: Option<Vec<Vec<String>>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BatchUploadResp {
+    pub fid: String,
+    pub chunk_end: i64,
+    pub file_info: FileInfo,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
@@ -298,21 +306,25 @@ pub async fn request_batch_upload(req: BatchUploadRequest<'_>) -> Result<String,
     Ok(resp.data)
 }
 
-pub async fn batch_upload_file<R: std::io::Read + std::io::Seek>(
+pub async fn batch_upload_file<R>(
     base_url: &str,
     token: &str,
     hash: &str,
     reader: &mut R,
     start: u64,
     end: u64,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<BatchUploadResp, Box<dyn Error>>
+where
+    R: tokio::io::AsyncRead + tokio::io::AsyncSeek + Unpin,
+{
     if end <= start {
         return Err("invalid byte range".into());
     }
 
-    let mut buf = vec![0u8; (end - start) as usize];
-    reader.seek(std::io::SeekFrom::Start(start))?;
-    reader.read_exact(&mut buf)?;
+    let size = (end - start) as usize;
+    let mut buf = vec![0u8; size];
+    reader.seek(std::io::SeekFrom::Start(start)).await?;
+    reader.read_exact(&mut buf).await?;
 
     let form = reqwest::multipart::Form::new().part(
         "file",
@@ -321,6 +333,7 @@ pub async fn batch_upload_file<R: std::io::Read + std::io::Seek>(
 
     let client = reqwest::Client::new();
     let url = format!("{}{}", base_url, Endpoint::BatchUpload.path());
+
     let resp = client
         .post(&url)
         .header("token", format!("Bearer {}", token))
@@ -331,7 +344,13 @@ pub async fn batch_upload_file<R: std::io::Read + std::io::Seek>(
         .await?;
 
     let resp_bytes = resp.bytes().await?;
-    let resp: Response<String> = serde_json::from_slice(&resp_bytes)?;
+    let resp: Response<BatchUploadResp> = serde_json::from_slice(&resp_bytes).map_err(|e| {
+        format!(
+            "failed to parse response: {e}, body: {}",
+            String::from_utf8_lossy(&resp_bytes)
+        )
+    })?;
+
     Ok(resp.data)
 }
 

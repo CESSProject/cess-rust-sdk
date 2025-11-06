@@ -10,7 +10,6 @@
 //! - Validate IPv4/IPv6 addresses
 //! - Parse and verify libp2p `Multiaddr` strings
 //! - Perform recursive DNS TXT lookups for `_dnsaddr` records
-//! 
 
 use crate::core::Error;
 use libp2p::core::multiaddr::{Multiaddr, Protocol};

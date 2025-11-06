@@ -27,7 +27,6 @@
 //! - Requires the Ledger Polkadot/CESS app to be open on the device.
 //! - BIP44 paths must start with `m/`.
 //! - Each signing operation sends the message in 230-byte APDU chunks.
-//! 
 
 use std::sync::Arc;
 use super::core::Error;
@@ -122,7 +121,7 @@ impl LedgerSigner {
     /// This handles APDU chunking for long payloads and returns the final signature bytes.
     fn send_sign_sync(&self, message: &[u8]) -> Result<Vec<u8>, String> {
         let path_bytes = pack_bip44_path_bytes(&self.derivation_path)?;
-        // INIT APDU: path bytes + message length (u16 BE) — adjust per app
+        // INIT APDU: path bytes + message length (u16 BE) - adjust per app
         let mut init_payload = path_bytes;
         init_payload.extend_from_slice(&(message.len() as u16).to_be_bytes());
         let init_cmd = APDUCommand {

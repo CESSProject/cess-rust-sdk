@@ -33,7 +33,7 @@
 //! ## Notes
 //! - All network access is done through `init_api()`.
 //! - Errors are wrapped into a unified [`Error`] type for simplicity.
-//! 
+
 pub mod audit;
 pub mod balances;
 pub mod file_bank;

@@ -12,7 +12,6 @@
 //! - `file`: File management utilities
 //! - `ip`: IP utilities for node/network operations
 //! - `str`: String-related helpers
-//! 
 
 pub mod account;
 pub mod file;
@@ -59,7 +58,7 @@ pub fn get_ss58_address(account_str: &str) -> Result<String, Error> {
 /// Returns an [`Error`] if the conversion to a fixed 64-byte array fails.
 ///
 /// # Panics
-/// None — handled safely unless `try_into()` fails, which is converted to `Error`.
+/// None - handled safely unless `try_into()` fails, which is converted to `Error`.
 pub fn hash_from_string(v: &str) -> Result<Hash, Error> {
     // Check if the hash starts with "0x"
     let v = if v.starts_with("0x") {

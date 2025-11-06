@@ -14,7 +14,6 @@
 //!
 //! ## Deprecated
 //! The `gateway` module is deprecated; use `retriever` instead.
-//! 
 
 #![recursion_limit = "1024"]
 

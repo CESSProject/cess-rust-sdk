@@ -3,10 +3,9 @@
 //! Provides low-level file handling utilities used by the SDK to safely
 //! write data buffers to disk.  
 //!
-//! Ensures that writes are **atomic** — data is first written to a temporary
+//! Ensures that writes are **atomic** - data is first written to a temporary
 //! file and only moved to the target location after a successful write and sync.
 //! This prevents partial or corrupted files in case of an I/O error or crash.
-//! 
 
 use crate::core::Error;
 use std::fs::{self, File};

@@ -13,7 +13,6 @@
 //! ## Notes
 //! The randomness source (`StdRng`) is pseudorandom and suitable for
 //! general use cases, but not cryptographically secure.
-//! 
 
 use crate::core::Error;
 use rand::rngs::StdRng;

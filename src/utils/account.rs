@@ -10,7 +10,6 @@
 //! - Parse public keys from addresses
 //! - Encode public keys back to SS58 addresses
 //! - Convert between `AccountId32`, `Pair`, and `Subxt` types
-//! 
 
 use blake2::{Blake2b512, Digest};
 use subxt::{

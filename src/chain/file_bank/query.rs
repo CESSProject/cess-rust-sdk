@@ -1,3 +1,14 @@
+//! # File Bank Query Module
+//!
+//! This module defines query interfaces for accessing on-chain data
+//! related to the `pallet_file_bank` runtime module.
+//!
+//! It allows fetching information such as file deals, file metadata,
+//! user-held files, and restoration orders directly from blockchain storage.
+//!
+//! The module leverages the unified [`Chain`] and [`Query`] traits to
+//! standardize access patterns across storage modules.
+
 use crate::chain::{Chain, Query};
 use crate::core::{ApiProvider, Error};
 use crate::polkadot::{
@@ -13,13 +24,14 @@ use crate::{impl_api_provider, H256};
 use std::str::FromStr;
 use subxt::utils::AccountId32;
 
-// impl ApiProvider for StorageApiProvider
+// Implements the API provider for the `pallet_file_bank` storage module.
 impl_api_provider!(
     StorageApiProvider,
     StorageApi,
     polkadot::storage().file_bank()
 );
 
+/// Provides access to on-chain queries for the `pallet_file_bank` module.
 pub struct StorageQuery;
 
 impl Chain for StorageQuery {}
@@ -33,6 +45,11 @@ impl Query for StorageQuery {
 }
 
 impl StorageQuery {
+    /// Fetches the deal information associated with a specific file hash.
+    ///
+    /// # Arguments
+    /// * `hash` - The hex string representing the file’s unique hash.
+    /// * `block_hash` - Optional block hash to query at a specific block state.
     pub async fn deal_map(hash: &str, block_hash: Option<H256>) -> Result<Option<DealInfo>, Error> {
         let api = Self::get_api();
         let hash = hash_from_string(hash)?;
@@ -41,6 +58,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Retrieves file metadata (`FileInfo`) associated with a given file hash.
     pub async fn file(hash: &str, block_hash: Option<H256>) -> Result<Option<FileInfo>, Error> {
         let api = Self::get_api();
         let hash = hash_from_string(hash)?;
@@ -49,6 +67,11 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Fetches the list of file slices currently held by a user.
+    ///
+    /// # Arguments
+    /// * `account` - The user’s account address in SS58 format.
+    /// * `block_hash` - Optional block hash to query historical state.
     pub async fn user_hold_file_list(
         account: &str,
         block_hash: Option<H256>,
@@ -60,6 +83,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Retrieves information about a file restoration order.
     pub async fn restoral_order(
         hash: &str,
         block_hash: Option<H256>,
@@ -71,6 +95,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Returns a list of users and their associated cleanup data.
     pub async fn clear_user_list(
         block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<(AccountId32, BoundedVec<u8>)>>, Error> {
@@ -80,6 +105,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Returns the count of failed file bank tasks associated with a given user.
     pub async fn task_failed_count(
         account: &str,
         block_hash: Option<H256>,

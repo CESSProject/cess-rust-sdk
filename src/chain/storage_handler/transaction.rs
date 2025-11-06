@@ -29,6 +29,11 @@ impl_api_provider!(
 
 pub type TxHash = String;
 
+/// Represents the transaction interface for interacting with the
+/// `pallet_storage_handler` on-chain module.
+///
+/// This struct handles all extrinsic submissions related to territory management,
+/// order creation, and consignment operations.
 pub struct StorageTransaction {
     signer: DynSigner,
 }
@@ -62,6 +67,9 @@ impl StorageTransaction {
         }
     }
 
+    /// Mints a new storage territory on-chain.
+    ///
+    /// The `days` parameter must be at least 30.
     pub async fn mint_territory(
         &self,
         gib_count: u32,
@@ -81,6 +89,7 @@ impl StorageTransaction {
         Self::find_first::<MintTerritory>(event)
     }
 
+    /// Expands an existing territory by increasing its storage capacity.
     pub async fn expand_territory(
         &self,
         territory_name: &str,
@@ -94,6 +103,7 @@ impl StorageTransaction {
         Self::find_first::<ExpansionTerritory>(event)
     }
 
+    /// Renews an existing territory for an additional number of days.
     pub async fn renew_territory(
         &self,
         territory_name: &str,
@@ -107,6 +117,7 @@ impl StorageTransaction {
         Self::find_first::<RenewalTerritory>(event)
     }
 
+    /// Reactivates a previously expired or inactive territory.
     pub async fn reactivate_territory(
         &self,
         territory_name: &str,
@@ -120,6 +131,7 @@ impl StorageTransaction {
         Self::find_first::<ReactivateTerritory>(event)
     }
 
+    /// Lists a territory for sale by setting its price on-chain.
     pub async fn territory_consignment(
         &self,
         territory_name: &str,
@@ -133,6 +145,7 @@ impl StorageTransaction {
         Self::find_first::<Consignment>(event)
     }
 
+    /// Purchases a consigned territory using its token identifier.
     pub async fn buy_consignment(
         &self,
         token: &str,
@@ -147,6 +160,7 @@ impl StorageTransaction {
         Self::find_first::<BuyConsignment>(event)
     }
 
+    /// Cancels a consignment that was previously listed for sale.
     pub async fn cancel_consignment(
         &self,
         territory_name: &str,
@@ -159,6 +173,7 @@ impl StorageTransaction {
         Self::find_first::<CancleConsignment>(event)
     }
 
+    /// Cancels a pending purchase action before it is finalized on-chain.
     pub async fn cancel_purchase_action(
         &self,
         token: &str,
@@ -171,6 +186,7 @@ impl StorageTransaction {
         Self::find_first::<CancelPurchaseAction>(event)
     }
 
+    /// Grants access or ownership of a territory to another account.
     pub async fn territory_grants(
         &self,
         territory_name: &str,
@@ -185,6 +201,9 @@ impl StorageTransaction {
         Ok(format!("0x{}", hex::encode(hash.0)))
     }
 
+    /// Renames a territory on-chain.
+    ///
+    /// Accepts both plain string and hex-prefixed (`0x`) names.
     pub async fn territory_rename(
         &self,
         old_territory_name: &str,
@@ -217,6 +236,9 @@ impl StorageTransaction {
         Ok(format!("0x{}", hex::encode(hash.0)))
     }
 
+    /// Creates a new pay order for a specific target account and territory.
+    ///
+    /// Used for initiating storage or renewal payments between users.
     pub async fn create_order(
         &self,
         target_acc: &str,
@@ -243,6 +265,9 @@ impl StorageTransaction {
         Self::find_first::<CreatePayOrder>(event)
     }
 
+    /// Executes a pending order by its `order_id`.
+    ///
+    /// On success, emits a `PaidOrder` event.
     pub async fn exec_order(&self, order_id: OrderId) -> Result<(TxHash, PaidOrder), Error> {
         let api = Self::get_api();
         let tx = api.exec_order(order_id);

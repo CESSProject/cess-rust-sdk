@@ -1,3 +1,14 @@
+//! # File Bank Transaction Module
+//!
+//! This module defines functions for performing extrinsics related to the
+//! `pallet_file_bank` runtime pallet.  
+//!
+//! It provides methods for uploading files, reporting transfers,
+//! certifying idle space, and handling file restoration orders.
+//!
+//! Each call signs and submits a transaction to the blockchain, then
+//! listens for success events emitted by the chain.
+
 use crate::chain::{AnySigner, Call, Chain, DynSigner};
 use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
@@ -22,7 +33,7 @@ use subxt::ext::subxt_core::utils::AccountId32;
 use subxt::tx::PairSigner;
 use subxt::PolkadotConfig;
 
-// impl ApiProvider for TransactionApiProvider
+// Implements the API provider for the `pallet_file_bank` transaction module.
 impl_api_provider!(
     TransactionApiProvider,
     TransactionApi,
@@ -63,6 +74,10 @@ impl StorageTransaction {
         }
     }
 
+    /// Submits an `upload_declaration` transaction.
+    ///
+    /// Declares a new file upload with its hash, segment list, owner info,
+    /// and file size.
     pub async fn upload_declaration(
         &self,
         file_hash: &str,
@@ -78,6 +93,7 @@ impl StorageTransaction {
         Self::find_first::<UploadDeclaration>(event)
     }
 
+    /// Initiates delivery of a file to a specific target territory.
     pub async fn territory_file_delivery(
         &self,
         account: &str,
@@ -94,6 +110,7 @@ impl StorageTransaction {
         Self::find_first::<TerritoryFileDelivery>(event)
     }
 
+    /// Submits a report for a completed file transfer.
     pub async fn transfer_report(
         &self,
         index: u8,
@@ -107,6 +124,7 @@ impl StorageTransaction {
         Self::find_first::<TransferReport>(event)
     }
 
+    /// Submits a report calculation proof for a given file hash.
     pub async fn calculate_report(
         &self,
         tee_sig: &str,
@@ -129,6 +147,7 @@ impl StorageTransaction {
         Self::find_first::<CalculateReport>(event)
     }
 
+    /// Replaces idle storage space after verification.
     pub async fn replace_idle_space(
         &self,
         idle_sig_info: IdleSigInfo,
@@ -143,6 +162,7 @@ impl StorageTransaction {
         Self::find_first::<ReplaceIdleSpace>(event)
     }
 
+    /// Deletes a file from the blockchain’s storage index.
     pub async fn delete_file(
         &self,
         account: &str,
@@ -157,6 +177,7 @@ impl StorageTransaction {
         Self::find_first::<DeleteFile>(event)
     }
 
+    /// Certifies the idle space of a storage node using TEE verification.
     pub async fn cert_idle_space(
         &self,
         idle_sig_info: IdleSigInfo,
@@ -171,6 +192,7 @@ impl StorageTransaction {
         Self::find_first::<IdleSpaceCert>(event)
     }
 
+    /// Generates a new restoral order for a specific file fragment.
     pub async fn generate_restoral_order(
         &self,
         file_hash: &str,
@@ -185,6 +207,7 @@ impl StorageTransaction {
         Self::find_first::<GenerateRestoralOrder>(event)
     }
 
+    /// Claims an existing restoral order for a fragment.
     pub async fn claim_restoral_order(
         &self,
         restoral_fragment: &str,
@@ -197,6 +220,7 @@ impl StorageTransaction {
         Self::find_first::<ClaimRestoralOrder>(event)
     }
 
+    /// Claims a restoral order that does not yet exist on-chain.
     pub async fn claim_restoral_noexist_order(
         &self,
         account: &str,
@@ -213,6 +237,7 @@ impl StorageTransaction {
         Self::find_first::<ClaimRestoralOrder>(event)
     }
 
+    /// Marks a restoral order as completed.
     pub async fn restoral_order_complete(
         &self,
         fragment_hash: &str,

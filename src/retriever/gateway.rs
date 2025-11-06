@@ -6,7 +6,6 @@
 //!
 //! It is designed to integrate with decentralized storage or encrypted data
 //! management systems that use re-encryption and territory-based access control.
-//! 
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use hex;

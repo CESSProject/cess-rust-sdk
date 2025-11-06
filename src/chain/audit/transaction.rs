@@ -15,7 +15,7 @@ use subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
 use subxt::tx::PairSigner;
 use subxt::PolkadotConfig;
 
-// impl ApiProvider for TransactionApiProvider
+// Implements the API provider for the `pallet_audit` transaction module.
 impl_api_provider!(
     TransactionApiProvider,
     TransactionApi,
@@ -23,6 +23,11 @@ impl_api_provider!(
 );
 
 pub type TxHash = String;
+
+/// Provides a transaction interface for the `pallet_audit` module.
+///
+/// This struct enables sending audit-related extrinsics (transactions) to the blockchain,
+/// including proof submissions and verification results.
 pub struct StorageTransaction {
     signer: DynSigner,
 }
@@ -42,6 +47,13 @@ impl Call for StorageTransaction {
 }
 
 impl StorageTransaction {
+    /// Creates a new transaction client using a mnemonic phrase.
+    ///
+    /// # Arguments
+    /// * `mnemonic` - The secret phrase used to derive a local signing keypair.
+    ///
+    /// # Returns
+    /// A new [`StorageTransaction`] instance ready to send signed transactions.
     pub fn from_mnemonic(mnemonic: &str) -> Self {
         let pair = PairS::from_string(mnemonic, None).unwrap();
         let boxed: AnySigner = Box::new(PairSigner::<PolkadotConfig, _>::new(pair));
@@ -50,12 +62,20 @@ impl StorageTransaction {
         }
     }
 
+    /// Creates a new transaction client using a provided dynamic signer.
     pub fn with_signer(signer: AnySigner) -> Self {
         Self {
             signer: DynSigner::new(signer),
         }
     }
 
+    /// Submits an idle proof to the blockchain.
+    ///
+    /// # Arguments
+    /// * `idle_prove` - The encoded idle proof data.
+    ///
+    /// # Returns
+    /// A tuple containing the transaction hash and the [`SubmitIdleProof`] event.
     pub async fn submit_idle_proof(
         &self,
         idle_prove: BoundedVec<u8>,
@@ -68,6 +88,13 @@ impl StorageTransaction {
         Self::find_first::<SubmitIdleProof>(event)
     }
 
+    /// Submits a service proof for verification.
+    ///
+    /// # Arguments
+    /// * `service_prove` - The encoded service proof data.
+    ///
+    /// # Returns
+    /// A tuple containing the transaction hash and the [`SubmitServiceProof`] event.
     pub async fn submit_service_proof(
         &self,
         service_prove: BoundedVec<u8>,
@@ -80,6 +107,18 @@ impl StorageTransaction {
         Self::find_first::<SubmitServiceProof>(event)
     }
 
+    /// Submits a verification result for an idle proof.
+    ///
+    /// # Arguments
+    /// * `total_prove_hash` - The hash of the total proof data.
+    /// * `front`, `rear` - Numerical bounds related to the proof range.
+    /// * `accumulator` - A Merkle accumulator structure for verification.
+    /// * `idle_result` - The result of the idle proof check.
+    /// * `signature` - The TEE-signed proof data.
+    /// * `tee_puk` - The TEE public key.
+    ///
+    /// # Returns
+    /// A tuple containing the transaction hash and the [`SubmitIdleVerifyResult`] event.
     #[allow(clippy::too_many_arguments)]
     pub async fn submit_verify_idle_result(
         &self,
@@ -107,6 +146,16 @@ impl StorageTransaction {
         Self::find_first::<SubmitIdleVerifyResult>(event)
     }
 
+    /// Submits a verification result for a service proof.
+    ///
+    /// # Arguments
+    /// * `service_result` - The result of the service proof check.
+    /// * `signature` - The signed verification data.
+    /// * `service_bloom_filter` - A Bloom filter structure containing proof data.
+    /// * `tee_puk` - The TEE public key.
+    ///
+    /// # Returns
+    /// A tuple containing the transaction hash and the [`SubmitServiceVerifyResult`] event.
     pub async fn submit_verify_service_result(
         &self,
         service_result: bool,

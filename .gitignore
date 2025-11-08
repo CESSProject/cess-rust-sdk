@@ -5,4 +5,6 @@ expand.rs
 
 .env
 
+.DS_Store
+
 examples/target

@@ -1,3 +1,14 @@
+//! # OSS Storage Query Module
+//!
+//! This module defines query functions for accessing on-chain data related to
+//! the `pallet_oss` runtime pallet.  
+//!
+//! It provides read-only access to the storage of OSS authority lists and
+//! individual OSS information records.  
+//!
+//! All queries are asynchronous and can optionally be executed at a specific
+//! block hash for historical lookups.
+
 use std::str::FromStr;
 
 use crate::chain::{Chain, Query};
@@ -10,7 +21,7 @@ use crate::polkadot::{
 use crate::{impl_api_provider, H256};
 use subxt::utils::AccountId32;
 
-// impl ApiProvider for StorageApiProvider
+// Implements the API provider for the `pallet_oss` storage queries.
 impl_api_provider!(StorageApiProvider, StorageApi, polkadot::storage().oss());
 
 pub struct StorageQuery;
@@ -26,6 +37,16 @@ impl Query for StorageQuery {
 }
 
 impl StorageQuery {
+    /// Fetches the list of authorities associated with a given OSS account.
+    ///
+    /// # Arguments
+    /// * `account` - The account ID in string form (e.g. SS58 address).
+    /// * `block_hash` - Optional block hash for querying a past state.
+    ///
+    /// # Returns
+    /// * `Ok(Some(BoundedVec<AccountId32>))` if data exists.
+    /// * `Ok(None)` if no authority list exists for the account.
+    /// * `Err(Error)` if parsing or query execution fails.
     pub async fn authority_list(
         &self,
         account: &str,
@@ -38,6 +59,16 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Fetches the `OssInfo` record associated with a specific account.
+    ///
+    /// # Arguments
+    /// * `account` - The OSS account ID to look up.
+    /// * `block_hash` - Optional block hash for historical queries.
+    ///
+    /// # Returns
+    /// * `Ok(Some(OssInfo))` if an OSS record exists.
+    /// * `Ok(None)` if the account has no associated OSS record.
+    /// * `Err(Error)` if the account format or query fails.
     pub async fn oss(
         &self,
         account: &str,

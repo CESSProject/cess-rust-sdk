@@ -10,39 +10,33 @@ use subxt::ext::sp_core::sr25519::Signature;
 use tokio::io::AsyncRead;
 use tokio_util::io::{ReaderStream, StreamReader};
 
+pub struct UploadParams<R> {
+    pub gateway_url: String,
+    pub reader: R,
+    pub object_name: String,
+    pub territory: String,
+    pub acc: String,
+    pub message: String,
+    pub signed_msg: Signature,
+    pub cipher: Option<String>,
+}
+
 pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
-    gateway_url: &str,
-    reader: R,
-    object_name: &str,
-    territory: &str,
-    acc: &str,
-    message: &str,
-    signed_msg: Signature,
+    params: UploadParams<R>,
 ) -> Result<UploadResponse, Box<dyn std::error::Error>> {
-    upload_object(
-        gateway_url,
-        reader,
-        object_name,
-        territory,
-        acc,
-        message,
-        signed_msg,
-        None,
-    )
-    .await
+    upload_object(params).await
 }
 
 pub async fn upload_encrypt<R: AsyncRead + Send + Sync + Unpin + 'static>(
-    gateway_url: &str,
-    reader: R,
-    object_name: &str,
-    territory: &str,
-    acc: &str,
-    message: &str,
-    signed_msg: Signature,
-    cipher: &str,
+    params: UploadParams<R>,
 ) -> Result<UploadResponse, Box<dyn std::error::Error>> {
-    upload_object(
+    upload_object(params).await
+}
+
+async fn upload_object<R: AsyncRead + Send + Sync + Unpin + 'static>(
+    params: UploadParams<R>,
+) -> Result<UploadResponse, Box<dyn std::error::Error>> {
+    let UploadParams {
         gateway_url,
         reader,
         object_name,
@@ -50,31 +44,18 @@ pub async fn upload_encrypt<R: AsyncRead + Send + Sync + Unpin + 'static>(
         acc,
         message,
         signed_msg,
-        Some(cipher.to_string()),
-    )
-    .await
-}
+        cipher,
+    } = params;
 
-async fn upload_object<R: AsyncRead + Send + Sync + Unpin + 'static>(
-    gateway_url: &str,
-    reader: R,
-    object_name: &str,
-    territory: &str,
-    acc: &str,
-    message: &str,
-    signed_msg: Signature,
-    cipher: Option<String>,
-) -> Result<UploadResponse, Box<dyn std::error::Error>> {
     if object_name.trim().is_empty() {
         return Err("Invalid object name.".into());
     }
 
     let mut headers = HeaderMap::new();
 
-    // headers.insert("Bucket", HeaderValue::from_str(bucket)?);
-    headers.insert("Territory", HeaderValue::from_str(territory)?);
-    headers.insert("Account", HeaderValue::from_str(acc)?);
-    headers.insert("Message", HeaderValue::from_str(message)?);
+    headers.insert("Territory", HeaderValue::from_str(&territory)?);
+    headers.insert("Account", HeaderValue::from_str(&acc)?);
+    headers.insert("Message", HeaderValue::from_str(&message)?);
     headers.insert(
         "Signature",
         HeaderValue::from_str(&signed_msg.0.to_base58())?,

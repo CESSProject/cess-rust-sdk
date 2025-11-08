@@ -1,4 +1,15 @@
-use crate::chain::{Call, Chain};
+//! # File Bank Transaction Module
+//!
+//! This module defines functions for performing extrinsics related to the
+//! `pallet_file_bank` runtime pallet.  
+//!
+//! It provides methods for uploading files, reporting transfers,
+//! certifying idle space, and handling file restoration orders.
+//!
+//! Each call signs and submits a transaction to the blockchain, then
+//! listens for success events emitted by the chain.
+
+use crate::chain::{AnySigner, Call, Chain, DynSigner};
 use crate::core::{ApiProvider, Error};
 use crate::impl_api_provider;
 use crate::polkadot::{
@@ -22,7 +33,7 @@ use subxt::ext::subxt_core::utils::AccountId32;
 use subxt::tx::PairSigner;
 use subxt::PolkadotConfig;
 
-// impl ApiProvider for TransactionApiProvider
+// Implements the API provider for the `pallet_file_bank` transaction module.
 impl_api_provider!(
     TransactionApiProvider,
     TransactionApi,
@@ -31,7 +42,7 @@ impl_api_provider!(
 
 pub type TxHash = String;
 pub struct StorageTransaction {
-    pair: PairS,
+    signer: DynSigner,
 }
 
 impl Chain for StorageTransaction {}
@@ -43,17 +54,30 @@ impl Call for StorageTransaction {
         crate::core::get_api::<TransactionApiProvider>()
     }
 
-    fn get_pair_signer(&self) -> PairSigner<PolkadotConfig, PairS> {
-        PairSigner::new(self.pair.clone())
+    fn get_signer(&self) -> &DynSigner {
+        &self.signer
     }
 }
 
 impl StorageTransaction {
-    pub fn new(mnemonic: &str) -> Self {
+    pub fn from_mnemonic(mnemonic: &str) -> Self {
         let pair = PairS::from_string(mnemonic, None).unwrap();
-        Self { pair }
+        let boxed: AnySigner = Box::new(PairSigner::<PolkadotConfig, _>::new(pair));
+        Self {
+            signer: DynSigner::new(boxed),
+        }
     }
 
+    pub fn with_signer(signer: AnySigner) -> Self {
+        Self {
+            signer: DynSigner::new(signer),
+        }
+    }
+
+    /// Submits an `upload_declaration` transaction.
+    ///
+    /// Declares a new file upload with its hash, segment list, owner info,
+    /// and file size.
     pub async fn upload_declaration(
         &self,
         file_hash: &str,
@@ -64,12 +88,12 @@ impl StorageTransaction {
         let api = Self::get_api();
         let file_hash = hash_from_string(file_hash)?;
         let tx = api.upload_declaration(file_hash, segment_list, user_brief, file_size);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<UploadDeclaration>(event)
     }
 
+    /// Initiates delivery of a file to a specific target territory.
     pub async fn territory_file_delivery(
         &self,
         account: &str,
@@ -81,12 +105,12 @@ impl StorageTransaction {
         let file_hash = hash_from_string(file_hash)?;
         let target_territory = target_territory.as_bytes().to_vec();
         let tx = api.territory_file_delivery(account, file_hash, BoundedVec(target_territory));
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<TerritoryFileDelivery>(event)
     }
 
+    /// Submits a report for a completed file transfer.
     pub async fn transfer_report(
         &self,
         index: u8,
@@ -95,12 +119,12 @@ impl StorageTransaction {
         let api = Self::get_api();
         let deal_hash = hash_from_string(deal_hash)?;
         let tx = api.transfer_report(index, deal_hash);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<TransferReport>(event)
     }
 
+    /// Submits a report calculation proof for a given file hash.
     pub async fn calculate_report(
         &self,
         tee_sig: &str,
@@ -118,12 +142,12 @@ impl StorageTransaction {
             file_hash,
         };
         let tx = api.calculate_report(BoundedVec(tee_sig), tag_sig_info);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<CalculateReport>(event)
     }
 
+    /// Replaces idle storage space after verification.
     pub async fn replace_idle_space(
         &self,
         idle_sig_info: IdleSigInfo,
@@ -133,12 +157,12 @@ impl StorageTransaction {
     ) -> Result<(TxHash, ReplaceIdleSpace), Error> {
         let api = Self::get_api();
         let tx = api.replace_idle_space(idle_sig_info, tee_sig_need_verify, tee_sig, tee_puk);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<ReplaceIdleSpace>(event)
     }
 
+    /// Deletes a file from the blockchain’s storage index.
     pub async fn delete_file(
         &self,
         account: &str,
@@ -148,12 +172,12 @@ impl StorageTransaction {
         let account = AccountId32::from_str(account).map_err(|e| Error::Custom(e.to_string()))?;
         let file_hash = hash_from_string(file_hash)?;
         let tx = api.delete_file(account, file_hash);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<DeleteFile>(event)
     }
 
+    /// Certifies the idle space of a storage node using TEE verification.
     pub async fn cert_idle_space(
         &self,
         idle_sig_info: IdleSigInfo,
@@ -163,12 +187,12 @@ impl StorageTransaction {
     ) -> Result<(TxHash, IdleSpaceCert), Error> {
         let api = Self::get_api();
         let tx = api.cert_idle_space(idle_sig_info, tee_sig_need_verify, tee_sig, tee_puk);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<IdleSpaceCert>(event)
     }
 
+    /// Generates a new restoral order for a specific file fragment.
     pub async fn generate_restoral_order(
         &self,
         file_hash: &str,
@@ -178,12 +202,12 @@ impl StorageTransaction {
         let file_hash = hash_from_string(file_hash)?;
         let restoral_fragment = hash_from_string(restoral_fragment)?;
         let tx = api.generate_restoral_order(file_hash, restoral_fragment);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<GenerateRestoralOrder>(event)
     }
 
+    /// Claims an existing restoral order for a fragment.
     pub async fn claim_restoral_order(
         &self,
         restoral_fragment: &str,
@@ -191,12 +215,12 @@ impl StorageTransaction {
         let api = Self::get_api();
         let restoral_fragment = hash_from_string(restoral_fragment)?;
         let tx = api.claim_restoral_order(restoral_fragment);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<ClaimRestoralOrder>(event)
     }
 
+    /// Claims a restoral order that does not yet exist on-chain.
     pub async fn claim_restoral_noexist_order(
         &self,
         account: &str,
@@ -208,12 +232,12 @@ impl StorageTransaction {
         let file_hash = hash_from_string(file_hash)?;
         let restoral_fragment = hash_from_string(restoral_fragment)?;
         let tx = api.claim_restoral_noexist_order(account, file_hash, restoral_fragment);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<ClaimRestoralOrder>(event)
     }
 
+    /// Marks a restoral order as completed.
     pub async fn restoral_order_complete(
         &self,
         fragment_hash: &str,
@@ -221,8 +245,7 @@ impl StorageTransaction {
         let api = Self::get_api();
         let fragment_hash = hash_from_string(fragment_hash)?;
         let tx = api.restoral_order_complete(fragment_hash);
-        let from = self.get_pair_signer();
-        let event = Self::sign_and_submit_tx_then_watch_default(&tx, &from).await?;
+        let event = Self::sign_and_submit_tx_then_watch_default(&tx, self.get_signer()).await?;
 
         Self::find_first::<RecoveryCompleted>(event)
     }

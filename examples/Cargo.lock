@@ -170,12 +170,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "android-tzdata"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e999941b234f3131b00bc13c22d06e8c5ff726d1b6318ac7eb276997bbb4fef0"
-
-[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1375,16 +1369,23 @@ dependencies = [
 
 [[package]]
 name = "cess-rust-sdk"
-version = "0.7.9"
+version = "0.8.0"
 dependencies = [
  "async-trait",
  "base58",
+ "base64 0.22.1",
  "blake2",
  "bs58",
+ "chrono",
+ "curve25519-dalek 4.1.3",
  "dotenv",
  "futures",
  "futures-util",
  "hex",
+ "ledger-apdu",
+ "ledger-transport",
+ "ledger-transport-hid",
+ "ledger-zondax-generic",
  "libp2p",
  "libp2p-core",
  "log",
@@ -1394,6 +1395,8 @@ dependencies = [
  "reed-solomon-erasure",
  "regex",
  "reqwest",
+ "rssdk",
+ "schnorrkel",
  "serde",
  "serde_json",
  "sp-keyring 34.0.0",
@@ -1439,14 +1442,16 @@ dependencies = [
 
 [[package]]
 name = "chrono"
-version = "0.4.38"
+version = "0.4.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
+checksum = "145052bdd345b87320e369255277e3fb5152762ad123a901ef5c262dd38fe8d2"
 dependencies = [
- "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
- "windows-targets 0.52.6",
+ "serde",
+ "wasm-bindgen",
+ "windows-link",
 ]
 
 [[package]]
@@ -2524,7 +2529,7 @@ dependencies = [
  "ed25519",
  "rand_core 0.6.4",
  "serde",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "subtle",
  "zeroize",
 ]
@@ -2554,7 +2559,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "hex",
  "rand_core 0.6.4",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "zeroize",
 ]
 
@@ -2745,6 +2750,9 @@ version = "0.1.0"
 dependencies = [
  "cess-rust-sdk",
  "dotenv",
+ "hex",
+ "rand",
+ "sha2 0.10.9",
  "sp-keyring 34.0.0",
  "tokio",
 ]
@@ -3587,6 +3595,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "hidapi"
+version = "2.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03b876ecf37e86b359573c16c8366bc3eba52b689884a0fc42ba3f67203d2a8b"
+dependencies = [
+ "cc",
+ "cfg-if",
+ "libc",
+ "pkg-config",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "hkdf"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4263,7 +4284,7 @@ dependencies = [
  "elliptic-curve",
  "once_cell",
  "serdect",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -4290,6 +4311,55 @@ name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+
+[[package]]
+name = "ledger-apdu"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c21ffd28d97c9252671ab2ebe7078c9fa860ff3c5a125039e174d25ec6872169"
+dependencies = [
+ "arrayref",
+ "no-std-compat",
+ "snafu",
+]
+
+[[package]]
+name = "ledger-transport"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2f18de77d956a030dbc5869ced47d404bbd641216ef2f9dce7ca90833ca64ff"
+dependencies = [
+ "async-trait",
+ "ledger-apdu",
+]
+
+[[package]]
+name = "ledger-transport-hid"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4e34341e2708fbf805a9ada44ef6182170c6464c4fc068ab801abb7562fd5e8"
+dependencies = [
+ "byteorder",
+ "cfg-if",
+ "hex",
+ "hidapi",
+ "ledger-transport",
+ "libc",
+ "log",
+ "thiserror 1.0.68",
+]
+
+[[package]]
+name = "ledger-zondax-generic"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7b7e1b78719fff5e70a67bab7224b1ed917aebb2b38521ffa047a9d93cc0501"
+dependencies = [
+ "async-trait",
+ "ledger-transport",
+ "serde",
+ "thiserror 1.0.68",
+]
 
 [[package]]
 name = "libc"
@@ -4407,7 +4477,7 @@ dependencies = [
  "multihash",
  "quick-protobuf",
  "rand",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror 1.0.68",
  "tracing",
  "zeroize",
@@ -4858,6 +4928,12 @@ dependencies = [
  "security-framework-sys",
  "tempfile",
 ]
+
+[[package]]
+name = "no-std-compat"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b93853da6d84c2e3c7d730d6473e8817692dd89be387eb01b94d7f108ecb5b8c"
 
 [[package]]
 name = "nodrop"
@@ -8517,6 +8593,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rssdk"
+version = "0.1.0"
+source = "git+https://github.com/CESSProject/cess-crypto#87b59b235880edebba551ba5ff712ba7901bafe4"
+dependencies = [
+ "aes-gcm",
+ "curve25519-dalek 4.1.3",
+ "hex",
+ "rand",
+ "schnorrkel",
+ "serde",
+ "serde_core",
+ "sha2 0.10.9",
+]
+
+[[package]]
 name = "ruint"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9018,9 +9109,9 @@ dependencies = [
 
 [[package]]
 name = "schnorrkel"
-version = "0.11.4"
+version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8de18f6d8ba0aad7045f5feae07ec29899c1112584a38509a84ad7b04451eaa0"
+checksum = "6e9fcb6c2e176e86ec703e22560d99d65a5ee9056ae45a08e13e84ebf796296f"
 dependencies = [
  "aead",
  "arrayref",
@@ -9030,7 +9121,7 @@ dependencies = [
  "merlin",
  "rand_core 0.6.4",
  "serde_bytes",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "subtle",
  "zeroize",
 ]
@@ -9166,10 +9257,11 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.214"
+version = "1.0.220"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f55c3193aca71c12ad7890f1785d2b73e1b9f63a0bbc353c08ef26fe03fc56b5"
+checksum = "ceecad4c782e936ac90ecfd6b56532322e3262b14320abf30ce89a92ffdbfe22"
 dependencies = [
+ "serde_core",
  "serde_derive",
 ]
 
@@ -9192,10 +9284,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_derive"
-version = "1.0.214"
+name = "serde_core"
+version = "1.0.220"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de523f781f095e28fa605cdce0f8307e451cc0fd14e2eb4cd2e98a355b147766"
+checksum = "ddba47394f3b862d6ff6efdbd26ca4673e3566a307880a0ffb98f274bbe0ec32"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.220"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60e1f3b1761e96def5ec6d04a6e7421c0404fa3cf5c0155f1e2848fae3d8cc08"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9212,6 +9313,7 @@ dependencies = [
  "memchr",
  "ryu",
  "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -9271,9 +9373,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.8"
+version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
+checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -9441,7 +9543,7 @@ dependencies = [
  "schnorrkel",
  "serde",
  "serde_json",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sha3",
  "siphasher",
  "slab",
@@ -9487,6 +9589,27 @@ dependencies = [
  "smol",
  "smoldot",
  "zeroize",
+]
+
+[[package]]
+name = "snafu"
+version = "0.8.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4800ae0e2ebdfaea32ffb9745642acdc378740dcbd74d3fb3cd87572a34810c6"
+dependencies = [
+ "snafu-derive",
+]
+
+[[package]]
+name = "snafu-derive"
+version = "0.8.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "186f5ba9999528053fb497fdf0dd330efcc69cfe4ad03776c9d704bc54fee10f"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -10191,7 +10314,7 @@ dependencies = [
  "blake2b_simd",
  "byteorder",
  "digest 0.10.7",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sha3",
  "twox-hash",
 ]
@@ -10660,7 +10783,7 @@ dependencies = [
  "parity-scale-codec",
  "rand",
  "scale-info",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sp-api",
  "sp-application-crypto 38.0.0",
  "sp-core 34.0.0",
@@ -11119,7 +11242,7 @@ dependencies = [
  "hmac 0.12.1",
  "pbkdf2",
  "schnorrkel",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "zeroize",
 ]
 
@@ -11132,7 +11255,7 @@ dependencies = [
  "hmac 0.12.1",
  "pbkdf2",
  "schnorrkel",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "zeroize",
 ]
 
@@ -12095,7 +12218,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_core 0.6.4",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sha3",
  "thiserror 1.0.68",
  "zeroize",
@@ -12374,7 +12497,7 @@ dependencies = [
  "log",
  "rustix 0.36.17",
  "serde",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "toml 0.5.11",
  "windows-sys 0.45.0",
  "zstd 0.11.2+zstd.1.5.2",
@@ -12619,6 +12742,12 @@ checksum = "33ab640c8d7e35bf8ba19b884ba838ceb4fba93a4e8c65a9059d08afcfc683d9"
 dependencies = [
  "windows-targets 0.52.6",
 ]
+
+[[package]]
+name = "windows-link"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 
 [[package]]
 name = "windows-registry"

@@ -77,7 +77,7 @@ async fn upload_file(
         return Err("Given path is not a file.".into());
     }
 
-    if metadata.size() == 0 {
+    if metadata.len() == 0 {
         return Err("File is an empty file.".into());
     }
 

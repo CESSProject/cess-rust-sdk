@@ -1,3 +1,4 @@
+use ledger_transport_hid::hidapi;
 use subxt::Error as SubxtError;
 
 pub trait ApiProvider {
@@ -76,6 +77,18 @@ pub enum Error {
 
     #[error(transparent)]
     FromHexError(#[from] hex::FromHexError),
+
+    #[error("hid api error: {0}")]
+    Hid(#[from] hidapi::HidError),
+
+    #[error("transport error: {0}")]
+    Transport(String),
+
+    #[error("apdu response error: {0}")]
+    APDU(String),
+
+    #[error("invalid response length")]
+    BadResponse,
 }
 
 impl From<&str> for Error {

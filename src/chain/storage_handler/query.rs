@@ -1,3 +1,12 @@
+//! # Storage Handler Query Module
+//!
+//! This module defines read-only query functions for the `pallet_storage_handler`.
+//! It provides APIs to fetch on-chain information about storage territories,
+//! consignments, orders, and global storage metrics.
+//!
+//! Each query can optionally take a `block_hash` parameter to read historical
+//! state at a specific block height.
+
 use crate::chain::{Chain, Query};
 use crate::core::{ApiProvider, Error};
 use crate::polkadot::{
@@ -11,7 +20,7 @@ use crate::{impl_api_provider, H256};
 use std::str::FromStr;
 use subxt::utils::AccountId32;
 
-// impl ApiProvider for StorageApiProvider
+// Implements the API provider for the `pallet_storage_handler` query module.
 impl_api_provider!(
     StorageApiProvider,
     StorageApi,
@@ -31,6 +40,9 @@ impl Query for StorageQuery {
 }
 
 impl StorageQuery {
+    /// Retrieves the account and territory name associated with a specific token.
+    ///
+    /// Returns `(account_ss58, territory_name)` if the mapping exists.
     pub async fn territory_key(
         token: &str,
         block_hash: Option<H256>,
@@ -49,6 +61,7 @@ impl StorageQuery {
         }
     }
 
+    /// Fetches detailed information about a specific territory by account and name.
     pub async fn territory(
         account: &str,
         territory_name: &str,
@@ -62,6 +75,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Lists all territories owned by a specific account.
     pub async fn territories_by_account(
         account: &str,
         block_hash: Option<H256>,
@@ -84,6 +98,7 @@ impl StorageQuery {
         }
     }
 
+    /// Returns the consignment information associated with a given token.
     pub async fn consignment(
         token: &str,
         block_hash: Option<H256>,
@@ -95,6 +110,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Checks whether a specific territory is currently frozen at a given block number.
     pub async fn territory_frozen(
         block_number: u32,
         token: &str,
@@ -107,6 +123,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Returns the total count of frozen territories at a given block number.
     pub async fn territory_frozen_counter(
         block_number: u32,
         block_hash: Option<H256>,
@@ -117,6 +134,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Checks whether a specific territory has expired at a given block number.
     pub async fn territory_expired(
         block_number: u32,
         token: &str,
@@ -129,6 +147,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Returns the current unit price for storage.
     pub async fn unit_price(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.unit_price();
@@ -136,6 +155,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Returns the total idle (available) storage power across the network.
     pub async fn total_power(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.total_idle_space();
@@ -143,6 +163,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Returns the total active service storage space.
     pub async fn total_space(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.total_service_space();
@@ -150,6 +171,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Returns the total amount of purchased storage space.
     pub async fn purchased_space(block_hash: Option<H256>) -> Result<Option<u128>, Error> {
         let api = Self::get_api();
         let query = api.purchased_space();
@@ -157,6 +179,7 @@ impl StorageQuery {
         Self::execute_query(&query, block_hash).await
     }
 
+    /// Fetches payment order information by order hash.
     pub async fn pay_order(
         order_hash: &str,
         block_hash: Option<H256>,

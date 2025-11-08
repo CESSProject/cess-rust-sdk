@@ -1,4 +1,4 @@
-use cess_rust_sdk::gateway::object::{download_encrypt, upload_encrypt};
+use cess_rust_sdk::gateway::object::{download_encrypt, upload_encrypt, UploadParams};
 use cess_rust_sdk::subxt::ext::sp_core::{sr25519::Pair as PairS, Pair};
 use cess_rust_sdk::{
     gateway::object::{download, upload},
@@ -18,16 +18,17 @@ async fn upload_object() {
     let message = get_random_code(16).unwrap();
     let signed_msg = pair.sign(message.as_bytes());
 
-    let response = upload(
-        gateway,
+    let params = UploadParams {
+        gateway_url: gateway.to_string(),
         reader,
-        "object_name",
-        "territory",
-        &acc,
-        &message,
+        object_name: "object_name".to_string(),
+        territory: "territory".to_string(),
+        acc,
+        message,
         signed_msg,
-    )
-    .await;
+        cipher: None,
+    };
+    let response = upload(params).await;
     match response {
         Ok(s) => println!("{:?}", s),
         Err(e) => {
@@ -48,17 +49,18 @@ async fn upload_object_encrypt() {
     let message = get_random_code(16).unwrap();
     let signed_msg = pair.sign(message.as_bytes());
 
-    let response = upload_encrypt(
-        gateway,
+    let params = UploadParams {
+        gateway_url: gateway.to_string(),
         reader,
-        "object_name",
-        "territory",
-        &acc,
-        &message,
+        object_name: "object_name".to_string(),
+        territory: "territory".to_string(),
+        acc,
+        message,
         signed_msg,
-        "password",
-    )
-    .await;
+        cipher: Some("password".to_string()),
+    };
+
+    let response = upload_encrypt(params).await;
     match response {
         Ok(s) => println!("{:?}", s),
         Err(e) => {

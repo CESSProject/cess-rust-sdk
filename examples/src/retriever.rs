@@ -88,7 +88,8 @@ mod tests {
         let filename = "testfile1";
         let file_size = 4096 * 1024; // 4 MB
 
-        let mnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+        let mnemonic =
+            "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
         let base_url = "http://154.194.34.195:1306";
         let pair = Sr25519Pair::from_phrase(mnemonic, None).unwrap().0;
         let acc =
@@ -130,7 +131,8 @@ mod tests {
         use tokio::fs::File;
 
         let message = "123456";
-        let mnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+        let mnemonic =
+            "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
         let base_url = "http://154.194.34.195:1306";
 
         let pair = Sr25519Pair::from_phrase(mnemonic, None).unwrap().0;

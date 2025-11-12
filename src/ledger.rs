@@ -28,11 +28,11 @@
 //! - BIP44 paths must start with `m/`.
 //! - Each signing operation sends the message in 230-byte APDU chunks.
 
-use std::sync::Arc;
 use super::core::Error;
 use ledger_apdu::APDUAnswer;
 use ledger_transport::APDUCommand;
 use ledger_transport_hid::{hidapi::HidApi, TransportNativeHID};
+use std::sync::Arc;
 use subxt::{
     ext::sp_core::sr25519,
     tx::Signer as SubxtSignerTrait,

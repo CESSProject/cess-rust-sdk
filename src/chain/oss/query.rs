@@ -11,6 +11,7 @@
 
 use std::str::FromStr;
 
+use crate::chain::oss::types::{Oss, OssData};
 use crate::chain::{Chain, Query};
 use crate::core::{ApiProvider, Error};
 use crate::polkadot::{
@@ -48,7 +49,6 @@ impl StorageQuery {
     /// * `Ok(None)` if no authority list exists for the account.
     /// * `Err(Error)` if parsing or query execution fails.
     pub async fn authority_list(
-        &self,
         account: &str,
         block_hash: Option<H256>,
     ) -> Result<Option<BoundedVec<AccountId32>>, Error> {
@@ -79,5 +79,43 @@ impl StorageQuery {
         let query = api.oss(account);
 
         Self::execute_query(&query, block_hash).await
+    }
+
+    pub async fn oss_list(block_hash: Option<H256>) -> Result<Option<Vec<Oss>>, Error> {
+        let api = Self::get_api();
+        let query = api.oss_iter();
+
+        let mut results = Vec::new();
+        let mut stream = Self::execute_iter(query, block_hash).await?;
+
+        while let Some(result) = stream.next().await {
+            let key_value = result?;
+            let mut acc_bytes = [0u8; 32];
+
+            let raw_key = &key_value.key_bytes;
+
+            if raw_key.len() < 32 {
+                return Err(Error::Custom("storage key too short".into()));
+            }
+            acc_bytes.copy_from_slice(&raw_key[raw_key.len() - 32..]);
+            let account = AccountId32(acc_bytes);
+
+            let oss_data = Oss {
+                account: account.to_string(),
+                data: OssData {
+                    domain: String::from_utf8(key_value.value.domain.0)
+                        .map_err(|_| Error::Custom("failed to decode domain string".into()))?,
+                    peer_id: String::from_utf8(key_value.value.peer_id.to_vec())
+                        .map_err(|_| Error::Custom("failed to decode domain string".into()))?,
+                },
+            };
+            results.push(oss_data);
+        }
+
+        if results.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(results))
+        }
     }
 }

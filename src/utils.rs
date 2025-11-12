@@ -119,7 +119,7 @@ pub fn block_hex_string_to_h256(hex: &str) -> H256 {
 ///
 /// # Example
 /// ```ignore
-/// let block_hash = block_hex_string_to_h256("0xabc..."); 
+/// let block_hash = block_hex_string_to_h256("0xabc...");
 /// let extrinsics = get_extrinsics_at(block_hash).await?;
 /// ```
 pub async fn get_extrinsics_at(

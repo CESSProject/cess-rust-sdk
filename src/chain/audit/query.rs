@@ -12,7 +12,7 @@ use subxt::utils::AccountId32;
 impl_api_provider!(StorageApiProvider, StorageApi, polkadot::storage().audit());
 
 /// Query interface for the `pallet_audit` module.
-/// 
+///
 /// This struct provides asynchronous methods to retrieve audit-related on-chain
 /// storage data, such as challenge snapshots and failure counts.
 pub struct StorageQuery;

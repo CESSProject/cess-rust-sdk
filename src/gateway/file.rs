@@ -7,7 +7,7 @@ use reqwest::{
     multipart, Client, RequestBuilder,
 };
 use std::io::Write;
-use std::{fs::OpenOptions, os::unix::fs::MetadataExt, path::Path, time::Duration};
+use std::{fs::OpenOptions, path::Path, time::Duration};
 use subxt::ext::sp_core::sr25519::Signature;
 use tokio::{
     fs::{self, File},

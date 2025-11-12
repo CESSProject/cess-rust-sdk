@@ -8,15 +8,22 @@
 //! management systems that use re-encryption and territory-based access control.
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
+use futures::future::join_all;
 use hex;
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::sync::Arc;
 use std::{collections::HashMap, error::Error, fs::File, io::Read, path::Path};
 use subxt::ext::sp_core::crypto::{Ss58AddressFormat, Ss58Codec};
 use subxt::ext::sp_core::{sr25519, ByteArray as _};
 use tokio::io::{AsyncReadExt as _, AsyncSeekExt as _};
+
+use crate::chain::oss::query::StorageQuery as OssQuery;
+use crate::chain::oss::transaction::StorageTransaction as OssStorageTransaction;
+use crate::chain::DynSigner;
+use serde::de::Deserializer;
 
 /// Gateway endpoint enumeration.
 ///
@@ -405,4 +412,121 @@ pub fn wrap_message_for_signing(msg: &[u8]) -> Vec<u8> {
     wrapped.extend_from_slice(b"</Bytes>");
 
     wrapped
+}
+
+pub async fn authorize_gateways(
+    gateway_base_url: &str,
+    signer: DynSigner,
+) -> Result<(), Box<dyn Error>> {
+    // 1. Get CDN node info
+    let node_info = check_cdn_node_available(gateway_base_url).await?;
+
+    // 2. Initialize signer / transaction object
+    let tx = Arc::new(OssStorageTransaction::with_signer(Box::new(signer)));
+
+    // 3. Query all OSS nodes from chain
+    let oss_entries = OssQuery::oss_list(None)
+        .await?
+        .ok_or("failed to query oss list")?;
+
+    if oss_entries.is_empty() {
+        println!("No OSS entries found on-chain.");
+        return Ok(());
+    }
+
+    // 4. Decode the CDN node's PoolId from base58
+    let node_pool_bytes = bs58::decode(&node_info.pool_id)
+        .into_vec()
+        .map_err(|e| format!("failed to decode pool_id base58: {}", e))?;
+
+    // 5. Filter and authorize all OSS entries matching the pool_id
+    let futures = oss_entries.into_iter().filter_map(|oss| {
+        let tx = Arc::clone(&tx);
+
+        // Decode OSS peer_id from base58
+        let peer_bytes = match bs58::decode(&oss.data.peer_id).into_vec() {
+            Ok(b) => b,
+            Err(_) => return None,
+        };
+
+        // Only match same pool_id
+        if peer_bytes != node_pool_bytes {
+            return None;
+        }
+
+        // Prepare account for authorization
+        let account = oss.account.clone();
+
+        Some(async move {
+            match tx.authorize(&account).await {
+                Ok((hash, _)) => {
+                    println!("Authorized gateway {} | tx: {}", account, hash);
+                }
+                Err(e) => {
+                    eprintln!("Failed to authorize {}: {:?}", account, e);
+                }
+            }
+        })
+    });
+
+    // 6. Execute all authorizations concurrently
+    join_all(futures).await;
+
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Status {
+    #[serde(flatten)]
+    pub extra: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CdnNode {
+    pub version: String,
+    #[serde(rename = "work_addr")]
+    pub work_addr: String,
+    #[serde(rename = "tee_addr")]
+    pub tee_addr: String,
+    #[serde(rename = "tee_pubkey", default, deserialize_with = "null_to_empty_vec")]
+    pub tee_pubkey: Vec<u8>,
+    #[serde(rename = "endpoint")]
+    pub endpoint: String,
+    #[serde(rename = "redis_addr")]
+    pub redis_addr: String,
+    #[serde(rename = "poolid")]
+    pub pool_id: String,
+    #[serde(rename = "is_gateway")]
+    pub is_gateway: bool,
+    #[serde(
+        rename = "active_storage_nodes",
+        default,
+        deserialize_with = "null_to_empty_vec"
+    )]
+    pub active_storage_nodes: Vec<String>,
+    pub status: Status,
+}
+
+pub async fn check_cdn_node_available(
+    base_url: &str,
+) -> Result<CdnNode, Box<dyn std::error::Error>> {
+    let client = Client::new();
+    let url = format!("{}/status", base_url.trim_end_matches('/'));
+
+    let resp = client.get(&url).send().await?;
+    if !resp.status().is_success() {
+        return Err(format!("Gateway not reachable: {}", base_url).into());
+    }
+
+    let wrapper = resp.json::<Response<CdnNode>>().await?;
+    Ok(wrapper.data)
+}
+
+fn null_to_empty_vec<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    let opt = Option::<Vec<T>>::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
 }

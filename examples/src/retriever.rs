@@ -1,15 +1,18 @@
 #[cfg(test)]
 mod tests {
+    use cess_rust_sdk::chain::{AnySigner, DynSigner};
     use cess_rust_sdk::retriever::gateway::{
-        batch_upload_file, download_data, gen_gateway_access_token, request_batch_upload,
-        upload_file, wrap_message_for_signing, BatchUploadRequest, UploadFileOpts,
+        BatchUploadRequest, UploadFileOpts, authorize_gateways, batch_upload_file, download_data, gen_gateway_access_token, request_batch_upload, upload_file, wrap_message_for_signing
     };
+    use cess_rust_sdk::subxt::PolkadotConfig;
     use cess_rust_sdk::subxt::ext::sp_core::sr25519::Pair as Sr25519Pair;
     use cess_rust_sdk::subxt::ext::sp_core::Pair;
+    use cess_rust_sdk::subxt::tx::PairSigner;
     use tokio::io::AsyncWriteExt as _;
 
     use std::time::{SystemTime, UNIX_EPOCH};
     use tokio;
+    use cess_rust_sdk::subxt::ext::sp_core::{sr25519::Pair as PairS};
 
     #[tokio::test]
     async fn test_upload() {
@@ -204,5 +207,25 @@ mod tests {
 
             start = end;
         }
+    }
+
+    #[tokio::test]
+    async fn test_authorize_gateways() {
+        let mnemonic =
+            "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice";
+
+        let pair = PairS::from_string(mnemonic, None).unwrap();
+        let boxed: AnySigner = Box::new(PairSigner::<PolkadotConfig, _>::new(pair));
+        let signer = DynSigner::new(boxed);
+        match authorize_gateways("http://154.194.34.195:1306", signer).await {
+            Ok(()) => assert!(true),
+            Err(e) => {
+                println!("{:?}", e);
+                assert!(false);
+            }
+        }
+        
+        
+        
     }
 }

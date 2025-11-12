@@ -159,7 +159,10 @@ pub async fn upload_file_in_chunks_resumable(
         let end = (start + CHUNK_SIZE as u64 - 1).min(file_size - 1);
 
         if start > end || end >= file_size {
-            println!("Invalid chunk range: start={}, end={}, file_size={}", start, end, file_size);
+            println!(
+                "Invalid chunk range: start={}, end={}, file_size={}",
+                start, end, file_size
+            );
             break;
         }
 

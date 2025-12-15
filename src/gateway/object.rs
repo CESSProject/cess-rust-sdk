@@ -1,3 +1,18 @@
+//! # Gateway Object Streaming Module
+//!
+//! This module provides streaming-based upload and download APIs for interacting
+//! with a DeOSS-compatible gateway service.
+//!
+//! ## Key Characteristics
+//!
+//! - Supports uploading data from any `AsyncRead` source (files, memory, pipes, etc.)
+//! - Enables zero-copy, backpressure-aware streaming via `reqwest`
+//! - Secure authentication using `sr25519` signatures
+//! - Optional encryption support through request headers
+//! - Streaming downloads returned as `AsyncRead`
+//!
+//! This module is best suited for large objects, in-memory streams,
+//! or applications that require fine-grained control over I/O.
 use super::upload_response::UploadResponse;
 use crate::core::Error;
 use base58::ToBase58;
@@ -10,6 +25,13 @@ use subxt::ext::sp_core::sr25519::Signature;
 use tokio::io::AsyncRead;
 use tokio_util::io::{ReaderStream, StreamReader};
 
+/// Parameters required for streaming object uploads.
+///
+/// This struct encapsulates all metadata, authentication information,
+/// and the input stream used for uploading an object.
+///
+/// The generic type `R` allows uploads from any asynchronous reader,
+/// including files, buffers, or network streams.
 pub struct UploadParams<R> {
     pub gateway_url: String,
     pub reader: R,
@@ -21,18 +43,39 @@ pub struct UploadParams<R> {
     pub cipher: Option<String>,
 }
 
+/// Uploads an object to the gateway using streaming I/O.
+///
+/// This function consumes an [`UploadParams`] instance and streams
+/// the object contents directly to the gateway without buffering
+/// the entire payload in memory.
+///
+/// # Returns
+/// An [`UploadResponse`] on successful upload.
 pub async fn upload<R: AsyncRead + Send + Sync + Unpin + 'static>(
     params: UploadParams<R>,
 ) -> Result<UploadResponse, Box<dyn std::error::Error>> {
     upload_object(params).await
 }
 
+/// Uploads an encrypted object to the gateway using streaming I/O.
+///
+/// This behaves identically to [`upload`] but includes an encryption
+/// cipher identifier in the request headers.
+///
+/// The cipher value must be supplied in [`UploadParams::cipher`].
 pub async fn upload_encrypt<R: AsyncRead + Send + Sync + Unpin + 'static>(
     params: UploadParams<R>,
 ) -> Result<UploadResponse, Box<dyn std::error::Error>> {
     upload_object(params).await
 }
 
+/// Internal helper for streaming object uploads.
+///
+/// This function:
+/// - Validates the object name
+/// - Constructs authentication headers
+/// - Wraps the reader into a streaming HTTP body
+/// - Submits the PUT request to the gateway
 async fn upload_object<R: AsyncRead + Send + Sync + Unpin + 'static>(
     params: UploadParams<R>,
 ) -> Result<UploadResponse, Box<dyn std::error::Error>> {
@@ -87,6 +130,10 @@ async fn upload_object<R: AsyncRead + Send + Sync + Unpin + 'static>(
     Ok(upload_response)
 }
 
+/// Downloads an object from the gateway as an asynchronous stream.
+///
+/// The returned reader can be consumed incrementally without loading
+/// the entire object into memory.
 pub async fn download(
     gateway_url: &str,
     fid: &str,
@@ -97,6 +144,9 @@ pub async fn download(
     download_object(gateway_url, fid, acc, message, signed_msg, None).await
 }
 
+/// Downloads an encrypted object from the gateway as an asynchronous stream.
+///
+/// The cipher identifier must match the one used during upload.
 pub async fn download_encrypt(
     gateway_url: &str,
     fid: &str,
@@ -116,6 +166,10 @@ pub async fn download_encrypt(
     .await
 }
 
+/// Internal helper for streaming object downloads.
+///
+/// This function returns an `AsyncRead` backed by the HTTP response stream,
+/// allowing callers to process data incrementally.
 async fn download_object(
     gateway_url: &str,
     fid: &str,

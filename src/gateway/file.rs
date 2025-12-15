@@ -1,3 +1,21 @@
+//! # Gateway File Transfer Module
+//!
+//! This module provides high-level APIs for uploading and downloading files
+//! through a DeOSS-compatible gateway service.
+//!
+//! ## Features
+//!
+//! - Standard file uploads (plain or encrypted)
+//! - Resumable, chunked uploads for large files
+//! - Secure downloads with optional encryption support
+//! - Signature-based authentication using `sr25519`
+//!
+//! All requests require an account identifier, a signed message, and are
+//! authenticated at the gateway level.
+//!
+//! Errors returned by this module indicate either local I/O failures,
+//! networking issues, or remote gateway service errors.
+//! 
 use super::upload_response::UploadResponse;
 use crate::core::Error;
 use base58::ToBase58;
@@ -14,10 +32,30 @@ use tokio::{
     io::{AsyncReadExt, AsyncSeekExt as _, AsyncWriteExt as _, BufReader},
 };
 
+/// Size of each upload chunk (200 MB).
 const CHUNK_SIZE: usize = 200 * 1024 * 1024;
+
+/// Maximum retry attempts for a failed chunk upload.
 const MAX_RETRIES: u8 = 5;
+
+/// Suffix used to persist resumable upload progress.
 const RESUME_FILE_SUFFIX: &str = ".upload_resume";
 
+/// Uploads a file to the gateway without encryption.
+///
+/// This function performs a single-request upload and is best suited
+/// for small to medium-sized files.
+///
+/// # Parameters
+/// - `gateway_url`: Base URL of the gateway service
+/// - `file_path`: Local path to the file to upload
+/// - `territory`: Target storage territory identifier
+/// - `acc`: Account SS58 address
+/// - `message`: Signed message payload
+/// - `signed_msg`: `sr25519` signature of the message
+///
+/// # Returns
+/// An [`UploadResponse`] on success.
 pub async fn upload(
     gateway_url: &str,
     file_path: &str,
@@ -38,6 +76,13 @@ pub async fn upload(
     .await
 }
 
+/// Uploads a file to the gateway using encryption.
+///
+/// This behaves the same as [`upload`] but includes an encryption
+/// cipher identifier in the request headers.
+///
+/// # Errors
+/// Returns an error if the cipher string is empty.
 pub async fn upload_encrypt(
     gateway_url: &str,
     file_path: &str,
@@ -62,6 +107,10 @@ pub async fn upload_encrypt(
     .await
 }
 
+/// Internal helper for performing a single-request file upload.
+///
+/// This function validates file metadata, constructs multipart form data,
+/// attaches required authentication headers, and submits the upload request.
 async fn upload_file(
     gateway_url: &str,
     file_path: &str,
@@ -122,6 +171,13 @@ async fn upload_file(
     Ok(upload_response)
 }
 
+
+/// Uploads a file in resumable chunks.
+///
+/// This API is designed for large files and supports automatic retry,
+/// exponential backoff, and resume-after-failure behavior.
+///
+/// Upload progress is persisted locally using a `.upload_resume` file.
 pub async fn upload_file_in_chunks_resumable(
     file_path: &str,
     gateway_url: &str,
@@ -256,6 +312,7 @@ pub async fn upload_file_in_chunks_resumable(
     ))
 }
 
+/// Persists the last successfully uploaded byte for resumable uploads.
 fn save_resume_point(path: &str, byte: u64) -> std::io::Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
@@ -266,6 +323,7 @@ fn save_resume_point(path: &str, byte: u64) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Reads the persisted resume offset from disk.
 fn read_resume_point(path: &str) -> Option<u64> {
     if let Ok(content) = std::fs::read_to_string(path) {
         if let Ok(byte) = content.trim().parse::<u64>() {
@@ -275,6 +333,7 @@ fn read_resume_point(path: &str) -> Option<u64> {
     None
 }
 
+/// Downloads a file from the gateway without encryption.
 pub async fn download(
     gateway_url: &str,
     fid: &str,
@@ -286,6 +345,7 @@ pub async fn download(
     download_file(gateway_url, fid, acc, message, signed_msg, save_path, None).await
 }
 
+/// Downloads an encrypted file from the gateway.
 pub async fn download_encrypt(
     gateway_url: &str,
     fid: &str,
@@ -307,6 +367,9 @@ pub async fn download_encrypt(
     .await
 }
 
+/// Internal helper for downloading files from the gateway.
+///
+/// Writes the downloaded data directly to disk.
 async fn download_file(
     gateway_url: &str,
     fid: &str,
